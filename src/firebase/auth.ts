@@ -42,7 +42,21 @@ export const signUp = async (email: string, password: string, userData: { name: 
     
     return { success: true, user };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    console.error('Firebase signUp error:', error);
+    
+    // Handle specific Firebase auth errors
+    let errorMessage = error.message;
+    if (error.code === 'auth/email-already-in-use') {
+      errorMessage = 'כתובת האימייל כבר בשימוש';
+    } else if (error.code === 'auth/invalid-email') {
+      errorMessage = 'כתובת אימייל לא תקינה';
+    } else if (error.code === 'auth/weak-password') {
+      errorMessage = 'הסיסמה חלשה מדי';
+    } else if (error.code === 'auth/operation-not-allowed') {
+      errorMessage = 'פעולה לא מותרת';
+    }
+    
+    return { success: false, error: errorMessage };
   }
 };
 
@@ -58,7 +72,23 @@ export const signIn = async (email: string, password: string) => {
     
     return { success: true, user };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    console.error('Firebase signIn error:', error);
+    
+    // Handle specific Firebase auth errors
+    let errorMessage = error.message;
+    if (error.code === 'auth/user-not-found') {
+      errorMessage = 'משתמש לא נמצא';
+    } else if (error.code === 'auth/wrong-password') {
+      errorMessage = 'סיסמה שגויה';
+    } else if (error.code === 'auth/invalid-email') {
+      errorMessage = 'כתובת אימייל לא תקינה';
+    } else if (error.code === 'auth/user-disabled') {
+      errorMessage = 'המשתמש הושבת';
+    } else if (error.code === 'auth/too-many-requests') {
+      errorMessage = 'יותר מדי ניסיונות התחברות. נסה שוב מאוחר יותר';
+    }
+    
+    return { success: false, error: errorMessage };
   }
 };
 
@@ -67,6 +97,7 @@ export const logout = async () => {
     await signOut(auth);
     return { success: true };
   } catch (error: any) {
+    console.error('Firebase logout error:', error);
     return { success: false, error: error.message };
   }
 };
@@ -80,6 +111,7 @@ export const getUserData = async (uid: string) => {
       return { success: false, error: 'User data not found' };
     }
   } catch (error: any) {
+    console.error('Firebase getUserData error:', error);
     return { success: false, error: error.message };
   }
 };
@@ -95,6 +127,7 @@ export const updateUserRole = async (uid: string, newRole: string) => {
     }, { merge: true });
     return { success: true };
   } catch (error: any) {
+    console.error('Firebase updateUserRole error:', error);
     return { success: false, error: error.message };
   }
 };
@@ -106,6 +139,7 @@ export const addMissingRoleField = async (uid: string, role: string = 'user') =>
     }, { merge: true });
     return { success: true };
   } catch (error: any) {
+    console.error('Firebase addMissingRoleField error:', error);
     return { success: false, error: error.message };
   }
 };
@@ -117,6 +151,7 @@ export const signInWithGoogle = async () => {
     await signInWithRedirect(auth, googleProvider);
     return { success: true };
   } catch (error: any) {
+    console.error('Firebase signInWithGoogle error:', error);
     return { success: false, error: error.message };
   }
 };
@@ -126,6 +161,7 @@ export const signInWithGoogleRedirect = async () => {
     await signInWithRedirect(auth, googleProvider);
     return { success: true };
   } catch (error: any) {
+    console.error('Firebase signInWithGoogleRedirect error:', error);
     return { success: false, error: error.message };
   }
 };
@@ -160,6 +196,7 @@ export const handleGoogleRedirectResult = async () => {
     }
     return { success: false, error: 'No redirect result' };
   } catch (error: any) {
+    console.error('Firebase handleGoogleRedirectResult error:', error);
     return { success: false, error: error.message };
   }
 };
