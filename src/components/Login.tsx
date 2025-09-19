@@ -227,9 +227,11 @@ const Login: React.FC = () => {
       const result = await signInWithGoogle();
       
       if (result.success) {
+        // Redirect will happen, so we don't need to show success message
+        // The user will be redirected to Google and then back to our app
         setMessage({ 
           type: 'success', 
-          text: language === 'he' ? 'התחברת עם Google בהצלחה!' : 'Successfully signed in with Google!'
+          text: language === 'he' ? 'מעביר ל-Google...' : 'Redirecting to Google...'
         });
       } else {
         setMessage({ 

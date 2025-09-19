@@ -6,7 +6,6 @@ import {
   User, 
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
   RecaptchaVerifier,
@@ -114,30 +113,9 @@ export const addMissingRoleField = async (uid: string, role: string = 'user') =>
 // Google Authentication functions
 export const signInWithGoogle = async () => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    const user = result.user;
-    
-    // Check if user exists in Firestore
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    
-    if (!userDoc.exists()) {
-      // Create new user document for Google sign-in
-      await setDoc(doc(db, 'users', user.uid), {
-        email: user.email,
-        name: user.displayName || user.email?.split('@')[0] || 'משתמש',
-        role: 'user', // Default role for Google users
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-        provider: 'google'
-      });
-    } else {
-      // Update last login time for existing user
-      await setDoc(doc(db, 'users', user.uid), {
-        lastLogin: new Date().toISOString()
-      }, { merge: true });
-    }
-    
-    return { success: true, user };
+    // Use redirect instead of popup to avoid Cross-Origin-Opener-Policy issues
+    await signInWithRedirect(auth, googleProvider);
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
