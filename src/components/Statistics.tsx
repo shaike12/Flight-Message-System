@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppSelector } from '../store/hooks';
 import { BarChart3, MessageSquare, Send, Clock, TrendingUp, Users, Plane, FileText, UserCheck, Activity, Database, Calendar } from 'lucide-react';
 import { GeneratedMessage, Flight, MessageTemplate } from '../types';
@@ -26,11 +26,11 @@ import {
 
 const Statistics: React.FC = () => {
   const { t } = useLanguage();
-  const { messages } = useAppSelector((state) => state.messages);
-  const { flights } = useAppSelector((state) => state.flights);
-  const { templates } = useAppSelector((state) => state.templates);
-  const { routes: flightRoutes } = useAppSelector((state) => state.flightRoutes);
-  const { cities } = useAppSelector((state) => state.cities);
+  const { messages } = useAppSelector(useMemo(() => (state) => state.messages, []));
+  const { flights } = useAppSelector(useMemo(() => (state) => state.flights, []));
+  const { templates } = useAppSelector(useMemo(() => (state) => state.templates, []));
+  const { routes: flightRoutes } = useAppSelector(useMemo(() => (state) => state.flightRoutes, []));
+  const { cities } = useAppSelector(useMemo(() => (state) => state.cities, []));
 
   // Calculate statistics
   const totalMessages = messages.length;

@@ -16,11 +16,16 @@ import { Button, TextField, Checkbox, FormControlLabel, Box, Typography, Paper, 
 const TemplateManager: React.FC = () => {
   const dispatch = useAppDispatch();
   const { t, language } = useLanguage();
-  const { templates, loading, customVariables } = useAppSelector((state) => ({
-    templates: state.templates.templates,
-    loading: state.templates.loading,
-    customVariables: state.customVariables.variables,
-  }));
+  const { templates, loading, customVariables } = useAppSelector(
+    useMemo(
+      () => (state) => ({
+        templates: state.templates.templates,
+        loading: state.templates.loading,
+        customVariables: state.customVariables.variables,
+      }),
+      []
+    )
+  );
 
   const [showForm, setShowForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);

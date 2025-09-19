@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { 
   fetchCustomVariablesAsync, 
@@ -24,7 +24,7 @@ const VariableManager: React.FC = () => {
   const dispatch = useAppDispatch();
   const { language } = useLanguage();
   const { user, userData } = useAuth();
-  const { variables, loading, error } = useAppSelector((state) => state.customVariables);
+  const { variables, loading, error } = useAppSelector(useMemo(() => (state) => state.customVariables, []));
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

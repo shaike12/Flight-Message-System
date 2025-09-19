@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addCity, updateCity, deleteCity } from '../store/slices';
 import { addFlightRoute, updateFlightRoute, deleteFlightRoute, fetchFlightRoutes } from '../store/slices/flightRoutesSlice';
@@ -52,7 +52,7 @@ interface CombinedRow {
 const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ cities }) => {
   const { t, language } = useLanguage();
   const dispatch = useAppDispatch();
-  const { routes: flightRoutes, loading, error } = useAppSelector(state => state.flightRoutes);
+  const { routes: flightRoutes, loading, error } = useAppSelector(useMemo(() => (state) => state.flightRoutes, []));
   const elAlCities = cities.filter(city => city.isElAlDestination);
 
   // Fetch flight routes on component mount

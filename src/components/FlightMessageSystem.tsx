@@ -31,11 +31,16 @@ import {
 } from 'lucide-react';
 
 const FlightMessageSystem: React.FC = () => {
-  const { templates, cities, flightRoutes } = useAppSelector((state) => ({
-    templates: state.templates.templates,
-    cities: state.cities.cities,
-    flightRoutes: state.flightRoutes.routes,
-  }));
+  const { templates, cities, flightRoutes } = useAppSelector(
+    useMemo(
+      () => (state) => ({
+        templates: state.templates.templates,
+        cities: state.cities.cities,
+        flightRoutes: state.flightRoutes.routes,
+      }),
+      []
+    )
+  );
 
   // Memoize the data to prevent unnecessary re-renders
   const memoizedData = useMemo(() => ({
