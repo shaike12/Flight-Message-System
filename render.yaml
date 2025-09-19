@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: flight-message-system
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REACT_APP_ENVIRONMENT
+        value: production
+      - key: REACT_APP_ENABLE_ANALYTICS
+        value: true
+      - key: REACT_APP_ENABLE_CRASH_REPORTING
+        value: true
+    # Add your Firebase environment variables here
+    # - key: REACT_APP_FIREBASE_API_KEY
+    #   value: your_firebase_api_key
+    # - key: REACT_APP_FIREBASE_AUTH_DOMAIN
+    #   value: your_project.firebaseapp.com
+    # - key: REACT_APP_FIREBASE_PROJECT_ID
+    #   value: your_project_id
+    # - key: REACT_APP_FIREBASE_STORAGE_BUCKET
+    #   value: your_project.firebasestorage.app
+    # - key: REACT_APP_FIREBASE_MESSAGING_SENDER_ID
+    #   value: your_messaging_sender_id
+    # - key: REACT_APP_FIREBASE_APP_ID
+    #   value: your_app_id
