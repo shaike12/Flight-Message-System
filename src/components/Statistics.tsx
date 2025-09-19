@@ -119,8 +119,18 @@ const Statistics: React.FC = () => {
       </Box>
 
       {/* Main Statistics Cards */}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
-        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        gap: { xs: 2, sm: 3 }, 
+        mb: 4,
+        justifyContent: { xs: 'center', sm: 'flex-start' }
+      }}>
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: '1 1 250px' }, 
+          minWidth: { xs: '280px', sm: '250px' },
+          maxWidth: { xs: '100%', sm: 'none' }
+        }}>
           <Card
             sx={{
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -146,7 +156,11 @@ const Statistics: React.FC = () => {
           </Card>
         </Box>
 
-        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: '1 1 250px' }, 
+          minWidth: { xs: '280px', sm: '250px' },
+          maxWidth: { xs: '100%', sm: 'none' }
+        }}>
           <Card
             sx={{
               background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
@@ -172,7 +186,11 @@ const Statistics: React.FC = () => {
           </Card>
         </Box>
 
-        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: '1 1 250px' }, 
+          minWidth: { xs: '280px', sm: '250px' },
+          maxWidth: { xs: '100%', sm: 'none' }
+        }}>
           <Card
             sx={{
               background: 'linear-gradient(135deg, #ed8936 0%, #dd6b20 100%)',
@@ -198,7 +216,11 @@ const Statistics: React.FC = () => {
           </Card>
         </Box>
 
-        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: '1 1 250px' }, 
+          minWidth: { xs: '280px', sm: '250px' },
+          maxWidth: { xs: '100%', sm: 'none' }
+        }}>
           <Card
             sx={{
               background: 'linear-gradient(135deg, #9f7aea 0%, #805ad5 100%)',
@@ -227,7 +249,11 @@ const Statistics: React.FC = () => {
 
       {/* System Data Cards */}
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
-        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: '1 1 250px' }, 
+          minWidth: { xs: '280px', sm: '250px' },
+          maxWidth: { xs: '100%', sm: 'none' }
+        }}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={2}>
@@ -247,7 +273,11 @@ const Statistics: React.FC = () => {
           </Card>
         </Box>
 
-        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: '1 1 250px' }, 
+          minWidth: { xs: '280px', sm: '250px' },
+          maxWidth: { xs: '100%', sm: 'none' }
+        }}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={2}>
@@ -267,7 +297,11 @@ const Statistics: React.FC = () => {
           </Card>
         </Box>
 
-        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: '1 1 250px' }, 
+          minWidth: { xs: '280px', sm: '250px' },
+          maxWidth: { xs: '100%', sm: 'none' }
+        }}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={2}>
@@ -287,7 +321,11 @@ const Statistics: React.FC = () => {
           </Card>
         </Box>
 
-        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+        <Box sx={{ 
+          flex: { xs: '1 1 100%', sm: '1 1 250px' }, 
+          minWidth: { xs: '280px', sm: '250px' },
+          maxWidth: { xs: '100%', sm: 'none' }
+        }}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={2}>

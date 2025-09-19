@@ -280,8 +280,9 @@ const TemplateManager: React.FC = () => {
                 <h4 className="font-medium text-lg" style={{ color: 'var(--mui-palette-text-primary)' }}>{template.name}</h4>
                 <Box sx={{ 
                   display: 'flex', 
-                  gap: 1, 
-                  alignItems: 'center'
+                  gap: { xs: 0.5, sm: 1 }, 
+                  alignItems: 'center',
+                  flexWrap: 'nowrap'
                 }}>
                   {/* Toggle Active Button */}
                   <Tooltip title={template.isActive ? 'השבת תבנית' : 'הפעל תבנית'} arrow>
@@ -292,8 +293,8 @@ const TemplateManager: React.FC = () => {
                         color: template.isActive ? '#10b981' : '#f59e0b',
                         border: `2px solid ${template.isActive ? '#10b981' : '#f59e0b'}`,
                         borderRadius: 2,
-                        width: 40,
-                        height: 40,
+                        width: { xs: 36, sm: 40 },
+                        height: { xs: 36, sm: 40 },
                         '&:hover': {
                           backgroundColor: template.isActive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
                           transform: 'scale(1.05)',
@@ -315,8 +316,8 @@ const TemplateManager: React.FC = () => {
                         color: '#3b82f6',
                         border: '2px solid #3b82f6',
                         borderRadius: 2,
-                        width: 40,
-                        height: 40,
+                        width: { xs: 36, sm: 40 },
+                        height: { xs: 36, sm: 40 },
                         '&:hover': {
                           backgroundColor: 'rgba(59, 130, 246, 0.2)',
                           transform: 'scale(1.05)',
@@ -338,8 +339,8 @@ const TemplateManager: React.FC = () => {
                         color: '#ef4444',
                         border: '2px solid #ef4444',
                         borderRadius: 2,
-                        width: 40,
-                        height: 40,
+                        width: { xs: 36, sm: 40 },
+                        height: { xs: 36, sm: 40 },
                         '&:hover': {
                           backgroundColor: 'rgba(239, 68, 68, 0.2)',
                           transform: 'scale(1.05)',

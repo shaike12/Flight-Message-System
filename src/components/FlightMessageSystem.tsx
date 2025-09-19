@@ -158,9 +158,9 @@ const FlightMessageSystem: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 4 }, px: { xs: 1, sm: 2 } }}>
       {/* Navigation Section */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: { xs: 2, sm: 4 } }}>
         <Paper
           elevation={0}
           sx={{
@@ -175,9 +175,9 @@ const FlightMessageSystem: React.FC = () => {
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between',
-            p: 2,
+            p: { xs: 1, sm: 2 },
             flexWrap: 'wrap',
-            gap: 2
+            gap: { xs: 1, sm: 2 }
           }}>
             {/* Navigation Tabs */}
             <Box sx={{ 

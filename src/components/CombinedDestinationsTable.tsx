@@ -534,15 +534,39 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
           </Alert>
 
           {/* Combined Table */}
-          <TableContainer component={Paper} sx={{ borderRadius: 3, overflow: 'hidden' }}>
-            <Table>
+          <TableContainer 
+            component={Paper} 
+            sx={{ 
+              borderRadius: 3, 
+              overflow: 'auto',
+              maxHeight: { xs: '60vh', sm: '70vh' },
+              '&::-webkit-scrollbar': {
+                width: '8px',
+                height: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: '#f1f1f1',
+                borderRadius: '4px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: '#c1c1c1',
+                borderRadius: '4px',
+                '&:hover': {
+                  backgroundColor: '#a8a8a8',
+                },
+              },
+            }}
+          >
+            <Table sx={{ minWidth: { xs: 600, sm: 800 } }}>
               <TableHead sx={{ backgroundColor: '#f8fafc' }}>
                 <TableRow>
                   <TableCell sx={{ 
                     fontWeight: 'bold', 
                     color: '#374151',
                     borderBottom: '2px solid #e5e7eb',
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    padding: { xs: '8px 4px', sm: '16px' }
                   }}>
                     מספר טיסה
                   </TableCell>
@@ -550,7 +574,9 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                     fontWeight: 'bold', 
                     color: '#374151',
                     borderBottom: '2px solid #e5e7eb',
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    padding: { xs: '8px 4px', sm: '16px' }
                   }}>
                     {t.destinationsTable.departureCity}
                   </TableCell>
@@ -558,7 +584,9 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                     fontWeight: 'bold', 
                     color: '#374151',
                     borderBottom: '2px solid #e5e7eb',
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    padding: { xs: '8px 4px', sm: '16px' }
                   }}>
                     {t.destinationsTable.arrivalCity}
                   </TableCell>
@@ -566,7 +594,9 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                     fontWeight: 'bold', 
                     color: '#374151',
                     borderBottom: '2px solid #e5e7eb',
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    padding: { xs: '8px 4px', sm: '16px' }
                   }}>
                     חברת תעופה
                   </TableCell>
@@ -574,7 +604,9 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                     fontWeight: 'bold', 
                     color: '#374151',
                     borderBottom: '2px solid #e5e7eb',
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    fontSize: { xs: '0.875rem', sm: '1rem' },
+                    padding: { xs: '8px 4px', sm: '16px' }
                   }}>
                     פעולות
                   </TableCell>
