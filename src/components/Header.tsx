@@ -43,7 +43,8 @@ const Header: React.FC = () => {
   };
 
   // Generate user initials for avatar
-  const getUserInitials = (name: string) => {
+  const getUserInitials = (name: string | undefined) => {
+    if (!name) return 'U';
     return name
       .split(' ')
       .map(word => word.charAt(0))
@@ -53,7 +54,8 @@ const Header: React.FC = () => {
   };
 
   // Generate avatar color based on user name
-  const getAvatarColor = (name: string) => {
+  const getAvatarColor = (name: string | undefined) => {
+    if (!name) return '#667eea'; // Default color
     const colors = [
       '#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5',
       '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50',
@@ -242,7 +244,7 @@ const Header: React.FC = () => {
                   maxWidth: { xs: '80px', sm: '120px', md: '150px' }
                 }}
               >
-                שלום, {userData.name}
+                שלום, {userData.name || 'משתמש'}
               </Typography>
               
               <Chip
@@ -395,7 +397,7 @@ const Header: React.FC = () => {
                   </Avatar>
                   <Box sx={{ ml: 1.5 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
-                      {userData.name}
+                      {userData.name || 'משתמש'}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
                       {userData.email || userData.phoneNumber}
