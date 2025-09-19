@@ -6,6 +6,7 @@ import { fetchTemplates } from '../store/slices/templatesSlice';
 import { fetchFlightRoutes } from '../store/slices/flightRoutesSlice';
 import { City, FlightRoute, MessageTemplate } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getLocalTime, getLocalTimeWithDate } from '../services/timezoneService';
 import { Plane, Calendar, Clock, MapPin, Copy, Trash2, AlertTriangle, CheckCircle, RefreshCw, FileText } from 'lucide-react';
 import { 
   Button, 
@@ -92,6 +93,11 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   const [showAddRouteButton, setShowAddRouteButton] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentTimeState, setCurrentTimeState] = useState(new Date());
+  const [departureLocalTime, setDepartureLocalTime] = useState<string>('');
+  const [departureLocalDate, setDepartureLocalDate] = useState<string>('');
+  const [arrivalLocalTime, setArrivalLocalTime] = useState<string>('');
+  const [arrivalLocalDate, setArrivalLocalDate] = useState<string>('');
 
   // Function to check which parameters are used in the selected template
   const getTemplateParameters = useCallback((templateContent: string): Set<string> => {
@@ -178,6 +184,58 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     dispatch(fetchTemplates());
     dispatch(fetchFlightRoutes());
   }, [dispatch]);
+
+  // Update current time every minute for local time display
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTimeState(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Update local times when cities or current time change
+  useEffect(() => {
+    const updateLocalTimes = async () => {
+      if (formData.departureCity) {
+        try {
+          const [time, date] = await Promise.all([
+            getLocalTime(formData.departureCity, currentTimeState),
+            getLocalTimeWithDate(formData.departureCity, currentTimeState)
+          ]);
+          setDepartureLocalTime(time);
+          setDepartureLocalDate(date);
+        } catch (error) {
+          console.error('Error updating departure local time:', error);
+          setDepartureLocalTime('שגיאה');
+          setDepartureLocalDate('שגיאה');
+        }
+      } else {
+        setDepartureLocalTime('');
+        setDepartureLocalDate('');
+      }
+
+      if (formData.arrivalCity) {
+        try {
+          const [time, date] = await Promise.all([
+            getLocalTime(formData.arrivalCity, currentTimeState),
+            getLocalTimeWithDate(formData.arrivalCity, currentTimeState)
+          ]);
+          setArrivalLocalTime(time);
+          setArrivalLocalDate(date);
+        } catch (error) {
+          console.error('Error updating arrival local time:', error);
+          setArrivalLocalTime('שגיאה');
+          setArrivalLocalDate('שגיאה');
+        }
+      } else {
+        setArrivalLocalTime('');
+        setArrivalLocalDate('');
+      }
+    };
+
+    updateLocalTimes();
+  }, [formData.departureCity, formData.arrivalCity, currentTimeState]);
 
 
   // Auto-save form data to localStorage with debouncing
@@ -711,6 +769,13 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                         {errors.departureCity}
                       </Typography>
                     )}
+                    {formData.departureCity && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
+                        🕐 {departureLocalTime} - זמן מקומי
+                        <br />
+                        📅 {departureLocalDate} - תאריך מקומי
+                      </Typography>
+                    )}
                   </FormControl>
                 </Box>
 
@@ -747,6 +812,13 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 {errors.arrivalCity && (
                       <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
                         {errors.arrivalCity}
+                      </Typography>
+                    )}
+                    {formData.arrivalCity && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
+                        🕐 {arrivalLocalTime} - זמן מקומי
+                        <br />
+                        📅 {arrivalLocalDate} - תאריך מקומי
                       </Typography>
                     )}
                   </FormControl>
