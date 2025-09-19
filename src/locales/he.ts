@@ -1,11 +1,33 @@
 export const he = {
+  // App
+  app: {
+    title: 'מערכת הודעות טיסות',
+    subtitle: 'ניהול הודעות אוטומטיות לטיסות אל על'
+  },
+
+  header: {
+    title: 'מערכת הודעות טיסות',
+    subtitle: 'ניהול הודעות טיסות של אל על',
+    welcome: 'ברוך הבא',
+    admin: 'מנהל',
+    user: 'משתמש',
+    settings: 'הגדרות',
+    logout: 'התנתק'
+  },
+
   // Navigation
   navigation: {
+    overview: 'סקירה כללית',
+    flights: 'טיסות',
+    messages: 'הודעות',
+    destinations: 'יעדים',
+    templates: 'תבניות',
+    statistics: 'סטטיסטיקות',
+    variables: 'ניהול משתנים',
     createMessage: 'יצירת הודעה',
     manageDestinations: 'ניהול יעדים ומסלולים',
     manageTemplates: 'ניהול תבניות',
-    messageHistory: 'היסטוריית הודעות',
-    statistics: 'סטטיסטיקות'
+    messageHistory: 'היסטוריית הודעות'
   },
 
   // Flight Form
@@ -17,8 +39,8 @@ export const he = {
     newTime: 'שעה חדשה',
     originalDate: 'תאריך מקורי',
     newDate: 'תאריך חדש',
-    departureCity: 'עיר יציאה',
-    arrivalCity: 'עיר נחיתה',
+    departureCity: 'יציאה',
+    arrivalCity: 'הגעה',
     loungeOpenTime: 'שעת פתיחת טרקלין',
     counterOpenTime: 'שעת פתיחת דלפקים',
     clearFields: 'נקה שדות',
@@ -38,7 +60,27 @@ export const he = {
     },
     keyboardShortcuts: 'קיצורי מקלדת: Ctrl+Enter לשליחה • Ctrl+K לניקוי',
     newDateOptional: 'תאריך חדש (אופציונלי)',
-    selectArrivalCity: 'בחר עיר נחיתה'
+    selectArrivalCity: 'בחר עיר הגעה',
+    selectDepartureCity: 'בחר עיר יציאה',
+    selectTemplate: 'בחר תבנית',
+    selectTemplateMessage: 'בחר תבנית הודעה',
+    noTemplatesFound: 'לא נמצאו תבניות',
+    hebrewMessage: 'הודעה עברית',
+    englishMessage: 'הודעה באנגלית',
+    copy: 'העתק',
+    flightNumberRequired: 'מספר טיסה נדרש',
+    departureCityRequired: 'עיר יציאה נדרשת',
+    arrivalCityRequired: 'עיר הגעה נדרשת',
+    originalDateRequired: 'תאריך מקורי נדרש',
+    originalTimeRequired: 'שעה מקורית נדרשת',
+    newTimeRequired: 'שעה חדשה נדרשת',
+    clearFieldsConfirm: 'האם אתה בטוח שברצונך לנקות את השדות?',
+    clearAllFieldsConfirm: 'האם אתה בטוח שברצונך לנקות את כל השדות?',
+    flightNumberPlaceholder: 'למשל: 123',
+    internetCodePlaceholder: 'הזן קוד אינטרנט',
+    newFlightNumberPlaceholder: 'למשל: 456 (אופציונלי)',
+    addNewRoute: 'הוספת מסלול חדש',
+    dataUpdater: 'עדכון נתונים'
   },
 
   // Template Manager
@@ -55,13 +97,19 @@ export const he = {
     delete: 'מחק תבנית',
     setActive: 'הגדר כתבנית פעילה',
     availableParameters: 'פרמטרים זמינים',
-    dragParameters: 'גרור ושחרר כל פרמטר לתבנית:',
-    hebrewContentLabel: 'תוכן עברי:',
-    englishContentLabel: 'תוכן אנגלי:',
-    active: 'פעילה',
-    inactive: 'לא פעילה',
+    dragParameters: 'לחץ או גרור פרמטרים לתבנית:',
+    hebrewContentLabel: 'עברית:',
+    englishContentLabel: 'אנגלית:',
+    active: 'פעיל',
+    inactive: 'לא פעיל',
+    searchTemplates: 'חיפוש תבניות...',
+    noTemplatesFound: 'לא נמצאו תבניות התואמות לחיפוש',
+    noTemplatesAvailable: 'אין תבניות זמינות',
+    created: 'נוצר',
+    createdBy: 'על ידי',
+    unknownUser: 'משתמש לא ידוע',
     deleteConfirm: 'האם אתה בטוח שברצונך למחוק את התבנית?',
-    fillAllFields: 'אנא מלא את כל השדות הנדרשים (שם, תוכן עברי ותוכן אנגלי)',
+    fillAllFields: 'אנא מלא את כל השדות הנדרשים (שם, עברית ואנגלית)',
     parameters: {
       flightNumber: 'מספר טיסה',
       newFlightNumber: 'מספר טיסה חדש',
@@ -72,7 +120,9 @@ export const he = {
       originalTime: 'שעה מקורית',
       newTime: 'שעה חדשה',
       loungeOpenTime: 'שעת פתיחת טרקלין',
-      counterOpenTime: 'שעת פתיחת דלפקים'
+      counterOpenTime: 'שעת פתיחת דלפקים',
+      counterCloseTime: 'שעת סגירת דלפקים',
+      internetCode: 'קוד אינטרנט'
     }
   },
 
@@ -80,8 +130,8 @@ export const he = {
   destinationsTable: {
     title: 'ניהול יעדים ומסלולי טיסות',
     flightNumber: 'מספר טיסה',
-    departureCity: 'עיר יציאה',
-    arrivalCity: 'עיר נחיתה',
+    departureCity: 'יציאה',
+    arrivalCity: 'נחיתה',
     actions: 'פעולות',
     edit: 'ערוך',
     save: 'שמור',
@@ -92,7 +142,35 @@ export const he = {
     selectArrivalCity: 'בחר עיר נחיתה',
     deleteConfirm: 'האם אתה בטוח שברצונך למחוק את המסלול?',
     flightNumberRequired: 'מספר טיסה נדרש',
-    citiesRequired: 'יש לבחור עיר יציאה ועיר נחיתה'
+    citiesRequired: 'יש לבחור עיר יציאה ועיר נחיתה',
+    subtitle: 'ניהול מסלולי טיסות ויעדים',
+    searchPlaceholder: 'חיפוש מסלולי טיסות...',
+    howItWorks: 'איך זה עובד',
+    howItWorksDescription: 'טבלה זו מכילה את כל מסלולי הטיסות של אל על וסנדור. כל מסלול מציג את עיר היציאה והנחיתה עם השמות בעברית ובאנגלית. הזן מספר טיסה בטופס והערים יתמלאו אוטומטית.',
+    addingRoutes: 'הוספת מסלולים:',
+    step1: 'לחץ על "הוסף מסלול חדש" כדי להוסיף מסלול טיסה חדש',
+    step2: 'מלא את כל השדות הנדרשים: מספר טיסה, עיר יציאה, עיר נחיתה וחברת תעופה',
+    step3: 'לחץ על "שמור" כדי לשמור את המסלול החדש',
+    airline: 'חברת תעופה',
+    foundRoutes: 'נמצאו {count} מסלולי טיסות עבור "{searchTerm}"',
+    loadingRoutes: 'טוען מסלולי טיסות...',
+    errorLoadingRoutes: 'שגיאה בטעינת מסלולי הטיסות',
+    flightNumber: 'מספר טיסה',
+    airline: 'חברת תעופה',
+    departureCityCode: 'עיר יציאה (קוד)',
+    arrivalCityCode: 'עיר נחיתה (קוד)',
+    departureCityHebrew: 'עיר יציאה (עברית)',
+    departureCityEnglish: 'עיר יציאה (אנגלית)',
+    arrivalCityHebrew: 'עיר נחיתה (עברית)',
+    arrivalCityEnglish: 'עיר נחיתה (אנגלית)',
+    enterFlightNumber: 'הזן מספר טיסה (1-4 ספרות)',
+    telAviv: 'תל אביב',
+    newYork: 'ניו יורק',
+    addRoute: 'הוסף מסלול',
+    saveChanges: 'שמור שינויים',
+    editRoute: 'עריכת מסלול טיסה',
+    addRouteDescription: 'הוסף מסלול טיסה חדש למערכת',
+    editRouteDescription: 'ערוך פרטי מסלול הטיסה'
   },
 
   // Message History
@@ -125,7 +203,18 @@ export const he = {
     mostUsedTemplate: 'התבנית הנפוצה ביותר',
     messagesByDay: 'הודעות לפי יום',
     messagesByTemplate: 'הודעות לפי תבנית',
-    noData: 'אין נתונים להצגה'
+    noData: 'אין נתונים להצגה',
+    systemOverview: 'סקירה כללית של פעילות המערכת',
+    flightRoutes: 'מסלולי טיסה',
+    updatedFlights: 'טיסות מעודכנות (שבוע אחרון)',
+    citiesInSystem: 'ערים במערכת',
+    userActivities: 'פעילויות משתמשים',
+    userActivityHistory: 'היסטוריית פעילות משתמשים',
+    popularRoutes: 'מסלולים פופולריים',
+    performanceSummary: 'סיכום ביצועים',
+    sentMessagesPercentage: 'אחוז הודעות שנשלחו',
+    averageMessagesPerDay: 'ממוצע הודעות ליום',
+    templatesInUse: 'תבניות בשימוש'
   },
 
   // Common

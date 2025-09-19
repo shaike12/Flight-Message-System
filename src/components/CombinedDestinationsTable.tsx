@@ -3,8 +3,41 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addCity, updateCity, deleteCity } from '../store/slices';
 import { addFlightRoute, updateFlightRoute, deleteFlightRoute, fetchFlightRoutes } from '../store/slices/flightRoutesSlice';
 import { City, FlightRoute } from '../types';
-import { MapPin, Plane, Plus, Edit2, Trash2, Save, X, Globe, Upload, Download } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import { MapPin, Plane, Plus, Edit2, Trash2, Save, X, Globe, Search, Info, AlertCircle } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { 
+  Box, 
+  Card, 
+  CardContent, 
+  Typography, 
+  Button, 
+  TextField, 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  Paper, 
+  IconButton, 
+  Tooltip, 
+  Alert, 
+  CircularProgress, 
+  Container,
+  Stack,
+  Chip,
+  Avatar,
+  InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Divider,
+  Modal,
+  Fade,
+  Backdrop,
+  Grid
+} from '@mui/material';
 
 interface CombinedDestinationsTableProps {
   cities: City[];
@@ -17,6 +50,7 @@ interface CombinedRow {
 }
 
 const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ cities }) => {
+  const { t, language } = useLanguage();
   const dispatch = useAppDispatch();
   const { routes: flightRoutes, loading, error } = useAppSelector(state => state.flightRoutes);
   const elAlCities = cities.filter(city => city.isElAlDestination);
@@ -30,9 +64,39 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
   const [originalFlightNumber, setOriginalFlightNumber] = useState<string>('');
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [addType, setAddType] = useState<'city' | 'route'>('city');
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+
+  // Check for pending route data on component mount
+  React.useEffect(() => {
+    const pendingRouteData = localStorage.getItem('pendingRouteData');
+    if (pendingRouteData) {
+      try {
+        const routeData = JSON.parse(pendingRouteData);
+        if (routeData.flightNumber) {
+          // Auto-open the route form with pending data
+          setIsAddingNew(true);
+          setAddType('route');
+          setRouteEditForm({
+            flightNumber: routeData.flightNumber || '',
+            departureCity: routeData.departureCity || '',
+            departureCityHebrew: routeData.departureCityHebrew || '',
+            departureCityEnglish: routeData.departureCityEnglish || '',
+            arrivalCity: routeData.arrivalCity || '',
+            arrivalCityHebrew: routeData.arrivalCityHebrew || '',
+            arrivalCityEnglish: routeData.arrivalCityEnglish || '',
+            airline: routeData.airline || 'ELAL'
+          });
+          // Clear the pending data after using it
+          localStorage.removeItem('pendingRouteData');
+        }
+      } catch (error) {
+        console.error('Error parsing pending route data:', error);
+        localStorage.removeItem('pendingRouteData');
+      }
+    }
+  }, []);
   
   const [cityEditForm, setCityEditForm] = useState({
     code: '',
@@ -53,19 +117,37 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
     airline: 'ELAL' as 'ELAL' | 'Sundor'
   });
 
-  // Create combined data - only flight routes now, sorted automatically
+  // Create combined data - only flight routes now, sorted automatically and filtered by search
   const combinedData: CombinedRow[] = React.useMemo(() => {
-    return flightRoutes.map(route => ({
+    let filteredRoutes = flightRoutes;
+    
+    // Filter by search term if provided
+    if (searchTerm.trim()) {
+      filteredRoutes = flightRoutes.filter((route: FlightRoute) => {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          route.flightNumber.toLowerCase().includes(searchLower) ||
+          route.departureCity.toLowerCase().includes(searchLower) ||
+          route.arrivalCity.toLowerCase().includes(searchLower) ||
+          route.departureCityHebrew.toLowerCase().includes(searchLower) ||
+          route.arrivalCityHebrew.toLowerCase().includes(searchLower) ||
+          route.departureCityEnglish.toLowerCase().includes(searchLower) ||
+          route.arrivalCityEnglish.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+    
+    return filteredRoutes.map((route: FlightRoute) => ({
       id: `route-${route.flightNumber}`,
       type: 'route' as const,
       data: route
-    })).sort((a, b) => {
+    })).sort((a: CombinedRow, b: CombinedRow) => {
       // Sort by flight number numerically
       const numA = parseInt((a.data as FlightRoute).flightNumber);
       const numB = parseInt((b.data as FlightRoute).flightNumber);
       return numA - numB;
     });
-  }, [flightRoutes]);
+  }, [flightRoutes, searchTerm]);
 
   const getCityName = (cityCode: string) => {
     const city = cities.find(c => c.code === cityCode);
@@ -114,6 +196,9 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
 
   // Route handlers
   const handleEditRoute = (route: FlightRoute) => {
+    setModalMode('edit');
+    setAddType('route');
+    setIsModalOpen(true);
     setEditingItem(`route-${route.flightNumber}`);
     setOriginalFlightNumber(route.flightNumber);
     setRouteEditForm({
@@ -146,7 +231,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
 
     if (editingItem?.startsWith('route-')) {
       // Find the route to update by original flight number
-      const routeToUpdate = flightRoutes.find(route => route.flightNumber === originalFlightNumber);
+      const routeToUpdate = flightRoutes.find((route: FlightRoute) => route.flightNumber === originalFlightNumber);
       if (routeToUpdate) {
         dispatch(updateFlightRoute({
           id: routeToUpdate.id,
@@ -155,7 +240,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
       }
     } else {
       // Check if flight number already exists when adding new route
-      const existingRoute = flightRoutes.find(route => route.flightNumber === routeEditForm.flightNumber);
+      const existingRoute = flightRoutes.find((route: FlightRoute) => route.flightNumber === routeEditForm.flightNumber);
       if (existingRoute) {
         alert(`מספר הטיסה ${routeEditForm.flightNumber} כבר קיים במערכת. אנא בחר מספר טיסה אחר.`);
         return;
@@ -164,7 +249,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
     }
     setEditingItem(null);
     setOriginalFlightNumber('');
-    setIsAddingNew(false);
+    setIsModalOpen(false);
     setRouteEditForm({
       flightNumber: '',
       departureCity: '',
@@ -179,7 +264,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
 
   const handleDeleteRoute = (flightNumber: string) => {
     if (window.confirm('האם אתה בטוח שברצונך למחוק את מסלול הטיסה?')) {
-      const routeToDelete = flightRoutes.find(route => route.flightNumber === flightNumber);
+      const routeToDelete = flightRoutes.find((route: FlightRoute) => route.flightNumber === flightNumber);
       if (routeToDelete) {
         dispatch(deleteFlightRoute(routeToDelete.id));
       }
@@ -188,7 +273,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
 
   const handleCancel = () => {
     setEditingItem(null);
-    setIsAddingNew(false);
+    setIsModalOpen(false);
     setCityEditForm({
       code: '',
       name: '',
@@ -209,8 +294,9 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
   };
 
   const handleAddNew = (type: 'city' | 'route') => {
-    setIsAddingNew(true);
+    setModalMode('add');
     setAddType(type);
+    setIsModalOpen(true);
     if (type === 'city') {
       setCityEditForm({
         code: '',
@@ -220,6 +306,26 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
         isElAlDestination: true
       });
     } else {
+      // Check if there's pending route data from FlightForm
+      const pendingRouteData = localStorage.getItem('pendingRouteData');
+      if (pendingRouteData) {
+        try {
+          const routeData = JSON.parse(pendingRouteData);
+          setRouteEditForm({
+            flightNumber: routeData.flightNumber || '',
+            departureCity: routeData.departureCity || '',
+            departureCityHebrew: routeData.departureCityHebrew || '',
+            departureCityEnglish: routeData.departureCityEnglish || '',
+            arrivalCity: routeData.arrivalCity || '',
+            arrivalCityHebrew: routeData.arrivalCityHebrew || '',
+            arrivalCityEnglish: routeData.arrivalCityEnglish || '',
+            airline: routeData.airline || 'ELAL'
+          });
+          // Clear the pending data after using it
+          localStorage.removeItem('pendingRouteData');
+        } catch (error) {
+          console.error('Error parsing pending route data:', error);
+          // Fallback to empty form
       setRouteEditForm({
         flightNumber: '',
         departureCity: '',
@@ -231,339 +337,276 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
         airline: 'ELAL' as 'ELAL' | 'Sundor'
       });
     }
-  };
-
-  // File upload handlers
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Check file type
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls') && !file.name.endsWith('.csv')) {
-      alert('אנא בחר קובץ Excel (.xlsx, .xls) או CSV');
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadProgress(0);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
+      } else {
+        setRouteEditForm({
+          flightNumber: '',
+          departureCity: '',
+          departureCityHebrew: '',
+          departureCityEnglish: '',
+          arrivalCity: '',
+          arrivalCityHebrew: '',
+          arrivalCityEnglish: '',
+          airline: 'ELAL' as 'ELAL' | 'Sundor'
         });
-      }, 200);
-
-      // Parse the file on the frontend
-      let content: string;
-      if (file.name.endsWith('.csv')) {
-        content = await file.text();
-      } else {
-        // For Excel files, read as ArrayBuffer
-        const arrayBuffer = await file.arrayBuffer();
-        content = arrayBuffer.toString();
-      }
-      const routes = parseFlightRoutesFile(content, file.name);
-      
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      // Check for existing routes and filter out duplicates
-      const existingFlightNumbers = new Set(flightRoutes.map(route => route.flightNumber));
-      const newRoutes = routes.filter(route => !existingFlightNumbers.has(route.flightNumber));
-      const duplicateRoutes = routes.filter(route => existingFlightNumbers.has(route.flightNumber));
-
-      if (duplicateRoutes.length > 0) {
-        const duplicateNumbers = duplicateRoutes.map(route => route.flightNumber).join(', ');
-        alert(`נמצאו ${duplicateRoutes.length} טיסות שכבר קיימות במערכת: ${duplicateNumbers}\nרק ${newRoutes.length} טיסות חדשות יועלו.`);
-      }
-
-      // Add only new routes to Firebase
-      let addedCount = 0;
-      for (const route of newRoutes) {
-        try {
-          await dispatch(addFlightRoute(route));
-          addedCount++;
-        } catch (error) {
-          console.error('Error adding route:', error);
-        }
-      }
-
-      if (newRoutes.length > 0) {
-        alert(`הועלו בהצלחה ${addedCount} מסלולי טיסות חדשים!`);
-      } else {
-        alert('לא נמצאו טיסות חדשות להעלאה.');
-      }
-      
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('שגיאה בהעלאת הקובץ');
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
       }
     }
   };
 
-  const parseFlightRoutesFile = (content: string, fileName: string): Omit<FlightRoute, 'id'>[] => {
-    const routes: Omit<FlightRoute, 'id'>[] = [];
-    
-    if (fileName.endsWith('.csv')) {
-      const lines = content.split('\n');
-      const headers = lines[0].split(',').map(h => h.trim());
-      
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
-        
-        const values = line.split(',').map(v => v.trim());
-        if (values.length >= 6) {
-          routes.push({
-            flightNumber: values[0],
-            departureCity: values[1],
-            departureCityHebrew: values[2],
-            departureCityEnglish: values[3],
-            arrivalCity: values[4],
-            arrivalCityHebrew: values[5],
-            arrivalCityEnglish: values[6],
-            airline: values[7] === 'Sundor' ? 'Sundor' : 'ELAL'
-          });
-        }
-      }
-    } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-      try {
-        const workbook = XLSX.read(content, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-        
-        for (let i = 1; i < jsonData.length; i++) {
-          const row = jsonData[i] as any[];
-          if (row && row.length >= 6) {
-            routes.push({
-              flightNumber: String(row[0] || '').trim(),
-              departureCity: String(row[1] || '').trim(),
-              departureCityHebrew: String(row[2] || '').trim(),
-              departureCityEnglish: String(row[3] || '').trim(),
-              arrivalCity: String(row[4] || '').trim(),
-              arrivalCityHebrew: String(row[5] || '').trim(),
-              arrivalCityEnglish: String(row[6] || '').trim(),
-              airline: String(row[7] || 'ELAL').trim() === 'Sundor' ? 'Sundor' : 'ELAL'
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing Excel file:', error);
-        throw new Error('שגיאה בקריאת קובץ Excel');
-      }
-    }
-    
-    return routes;
-  };
 
-  const handleDownloadTemplate = () => {
-    const csvContent = 'מספר טיסה,קוד עיר יציאה,שם עיר יציאה עברית,שם עיר יציאה אנגלית,קוד עיר נחיתה,שם עיר נחיתה עברית,שם עיר נחיתה אנגלית,חברת תעופה\n1,TLV,תל אביב,Tel Aviv,JFK,ניו יורק,New York,ELAL\n2,TLV,תל אביב,Tel Aviv,LAX,לוס אנג\'לס,Los Angeles,ELAL\n3,TLV,תל אביב,Tel Aviv,DXB,דובאי,Dubai,Sundor';
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'flight_routes_template.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <div className="text-center">
-              <div className="text-lg text-gray-600">טוען מסלולי טיסות...</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Card sx={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <CircularProgress size={24} />
+            <Typography variant="h6" sx={{ color: '#718096' }}>
+              טוען מסלולי טיסות...
+            </Typography>
+          </Stack>
+        </Card>
+      </Container>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-            <div className="text-center">
-              <div className="text-lg text-red-600">שגיאה בטעינת מסלולי הטיסות: {error}</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Alert 
+          severity="error" 
+          icon={<AlertCircle size={20} />}
+          sx={{ 
+            borderRadius: 3,
+            '& .MuiAlert-message': {
+              fontSize: '16px'
+            }
+          }}
+        >
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            שגיאה בטעינת מסלולי הטיסות
+          </Typography>
+          <Typography variant="body2">
+            {error}
+          </Typography>
+        </Alert>
+      </Container>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center">
-              <Plane className="h-6 w-6 text-blue-600 mr-3" />
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                מסלולי טיסות של אל על
-              </h3>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={handleDownloadTemplate}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Card sx={{ height: '80vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Header - Fixed */}
+        <CardContent sx={{ flexShrink: 0, borderBottom: '1px solid #e5e7eb' }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+            <Stack direction="row" alignItems="center" spacing={2}>
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                <Download className="h-4 w-4 mr-2" />
-                הורד תבנית
-              </button>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                {isUploading ? 'מעלה...' : 'העלה קובץ'}
-              </button>
-              <button
+                <Plane size={24} color="white" />
+              </Box>
+              <Box>
+                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1a202c' }}>
+                  {t.destinationsTable.title}
+                </Typography>
+                <Typography variant="body1" sx={{ color: '#718096' }}>
+                  {t.destinationsTable.subtitle}
+                </Typography>
+              </Box>
+            </Stack>
+            <Button
+              variant="contained"
+              startIcon={<Plus size={20} />}
                 onClick={() => handleAddNew('route')}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                הוסף מסלול חדש
-              </button>
-            </div>
-          </div>
+              sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                fontWeight: 700,
+                px: 3,
+                py: 1.5,
+                borderRadius: 3,
+                boxShadow: '0 8px 25px rgba(102, 126, 234, 0.4)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+                  boxShadow: '0 12px 35px rgba(102, 126, 234, 0.5)',
+                  transform: 'translateY(-2px)',
+                },
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              {t.destinationsTable.addNewRoute}
+            </Button>
+          </Stack>
 
-          {/* File Upload Input (Hidden) */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
+          {/* Search Field - Fixed */}
+          <Box sx={{ mb: 2 }}>
+            <TextField
+              fullWidth
+              placeholder={t.destinationsTable.searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search size={20} color="#9ca3af" />
+                  </InputAdornment>
+                ),
+                endAdornment: searchTerm && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => setSearchTerm('')}
+                      sx={{ color: '#9ca3af' }}
+                    >
+                      <X size={16} />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 3,
+                  backgroundColor: 'white',
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#667eea',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#667eea',
+                    borderWidth: 2,
+                  },
+                },
+              }}
+            />
+            {searchTerm && (
+              <Typography variant="body2" sx={{ mt: 1, color: '#718096' }}>
+                {t.destinationsTable.foundRoutes.replace('{count}', combinedData.length.toString()).replace('{searchTerm}', searchTerm)}
+              </Typography>
+            )}
+          </Box>
+        </CardContent>
 
-          {/* Upload Progress */}
-          {isUploading && (
-            <div className="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Upload className="h-5 w-5 text-green-400" />
-                </div>
-                <div className="mr-3 flex-1">
-                  <div className="text-sm font-medium text-green-800">
-                    מעלה קובץ...
-                  </div>
-                  <div className="mt-2">
-                    <div className="bg-green-200 rounded-full h-2">
-                      <div 
-                        className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${uploadProgress}%` }}
-                      ></div>
-                    </div>
-                    <div className="text-xs text-green-600 mt-1">
-                      {uploadProgress}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
+        {/* Scrollable Content */}
+        <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
           {/* Info Box */}
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <Globe className="h-5 w-5 text-blue-400" />
-              </div>
-              <div className="mr-3">
-                <h3 className="text-sm font-medium text-blue-800">
-                  איך זה עובד
-                </h3>
-                <div className="mt-2 text-sm text-blue-700">
-                  <p>
-                    טבלה זו מכילה את כל מסלולי הטיסות של אל על וסנדור. 
-                    כל מסלול מציג את עיר היציאה והנחיתה עם השמות בעברית ובאנגלית.
-                    הזן מספר טיסה בטופס והערים יתמלאו אוטומטית.
-                  </p>
-                  <div className="mt-3">
-                    <p className="font-medium">העלאת קבצים:</p>
-                    <ul className="list-disc list-inside mt-1 space-y-1">
-                      <li>לחץ על "הורד תבנית" כדי לקבל קובץ CSV לדוגמה</li>
-                      <li>מלא את הקובץ עם מסלולי הטיסות שלך (מספר טיסה, קוד עיר יציאה, שם עברית, שם אנגלית, קוד עיר נחיתה, שם עברית, שם אנגלית, חברת תעופה)</li>
-                      <li>לחץ על "העלה קובץ" כדי להוסיף את המסלולים לטבלה</li>
-                      <li>תומך בקבצי CSV, Excel (.xlsx, .xls)</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Alert 
+            severity="info" 
+            icon={<Info size={20} />}
+            sx={{ 
+              mb: 3,
+              borderRadius: 3,
+              backgroundColor: '#f0f9ff',
+              border: '1px solid #0ea5e9',
+              '& .MuiAlert-icon': {
+                color: '#0ea5e9'
+              }
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: 2, color: '#0c4a6e', fontWeight: 'bold' }}>
+              {t.destinationsTable.howItWorks}
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 2, color: '#0c4a6e' }}>
+              {t.destinationsTable.howItWorksDescription}
+            </Typography>
+            <Divider sx={{ my: 2, borderColor: '#0ea5e9' }} />
+            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: '#0c4a6e' }}>
+              {t.destinationsTable.addingRoutes}
+            </Typography>
+            <Box component="ul" sx={{ pl: 2, m: 0 }}>
+              <Typography component="li" variant="body2" sx={{ mb: 1, color: '#0c4a6e' }}>
+                {t.destinationsTable.step1}
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ mb: 1, color: '#0c4a6e' }}>
+                {t.destinationsTable.step2}
+              </Typography>
+              <Typography component="li" variant="body2" sx={{ color: '#0c4a6e' }}>
+                {t.destinationsTable.step3}
+              </Typography>
+            </Box>
+          </Alert>
 
           {/* Combined Table */}
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-300">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <TableContainer component={Paper} sx={{ borderRadius: 3, overflow: 'hidden' }}>
+            <Table>
+              <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+                <TableRow>
+                  <TableCell sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#374151',
+                    borderBottom: '2px solid #e5e7eb',
+                    textAlign: 'center'
+                  }}>
                     מספר טיסה
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    עיר יציאה
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    עיר נחיתה
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  </TableCell>
+                  <TableCell sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#374151',
+                    borderBottom: '2px solid #e5e7eb',
+                    textAlign: 'center'
+                  }}>
+                    {t.destinationsTable.departureCity}
+                  </TableCell>
+                  <TableCell sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#374151',
+                    borderBottom: '2px solid #e5e7eb',
+                    textAlign: 'center'
+                  }}>
+                    {t.destinationsTable.arrivalCity}
+                  </TableCell>
+                  <TableCell sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#374151',
+                    borderBottom: '2px solid #e5e7eb',
+                    textAlign: 'center'
+                  }}>
                     חברת תעופה
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  </TableCell>
+                  <TableCell sx={{ 
+                    fontWeight: 'bold', 
+                    color: '#374151',
+                    borderBottom: '2px solid #e5e7eb',
+                    textAlign: 'center'
+                  }}>
                     פעולות
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {/* Add New Row - moved to top */}
-                {isAddingNew && (
-                  <tr className="bg-blue-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-8 w-8">
-                          <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                            <Plus className="h-4 w-4 text-green-600" />
-                          </div>
-                        </div>
-                        <div className="mr-3">
-                          <input
-                            type="text"
+                {false && (
+                  <TableRow sx={{ backgroundColor: '#f0f9ff' }}>
+                    <TableCell>
+                      <Stack direction="row" alignItems="center" spacing={2}>
+                        <Avatar sx={{ bgcolor: '#10b981', width: 32, height: 32 }}>
+                          <Plus size={16} color="white" />
+                        </Avatar>
+                        <TextField
+                          size="small"
                             value={routeEditForm.flightNumber}
                             onChange={(e) => {
                               const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                               setRouteEditForm({...routeEditForm, flightNumber: value});
                             }}
                             placeholder="מספר טיסה"
-                            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                          sx={{ width: 100 }}
+                          inputProps={{ 
+                            maxLength: 4,
+                            pattern: '[0-9]*',
+                            inputMode: 'numeric'
+                          }}
+                        />
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
                       <div className="space-y-1">
                         <input
                           type="text"
@@ -587,231 +630,550 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                           className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
                         />
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
-                        <input
-                          type="text"
+                    </TableCell>
+                    <TableCell>
+                      <Stack spacing={1}>
+                        <TextField
+                          size="small"
                           value={routeEditForm.arrivalCity}
                           onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCity: e.target.value})}
                           placeholder="קוד עיר נחיתה (JFK)"
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                          sx={{ width: '100%', '& .MuiInputBase-input': { textAlign: 'right' } }}
                         />
-                        <input
-                          type="text"
+                        <TextField
+                          size="small"
                           value={routeEditForm.arrivalCityHebrew}
                           onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCityHebrew: e.target.value})}
                           placeholder="שם עברית"
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                          sx={{ width: '100%', '& .MuiInputBase-input': { textAlign: 'right' } }}
                         />
-                        <input
-                          type="text"
+                        <TextField
+                          size="small"
                           value={routeEditForm.arrivalCityEnglish}
                           onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCityEnglish: e.target.value})}
                           placeholder="English name"
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                          sx={{ width: '100%', '& .MuiInputBase-input': { textAlign: 'left', direction: 'ltr' } }}
                         />
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      <FormControl fullWidth size="small">
+                        <Select
                         value={routeEditForm.airline}
                         onChange={(e) => setRouteEditForm({...routeEditForm, airline: e.target.value as 'ELAL' | 'Sundor'})}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
-                      >
-                        <option value="ELAL">EL AL</option>
-                        <option value="Sundor">Sundor</option>
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex justify-center space-x-2">
-                        <button
-                          onClick={handleSaveRoute}
-                          className="text-green-600 hover:text-green-900"
+                          sx={{ borderRadius: 2, backgroundColor: 'white' }}
                         >
-                          <Save className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={handleCancel}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                          <MenuItem value="ELAL">EL AL</MenuItem>
+                          <MenuItem value="Sundor">Sundor</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </TableCell>
+                    <TableCell sx={{ textAlign: 'center' }}>
+                      <Stack direction="row" spacing={1} justifyContent="center">
+                        <IconButton onClick={handleSaveRoute} color="primary" sx={{ color: '#10b981' }}>
+                          <Save size={20} />
+                        </IconButton>
+                        <IconButton onClick={handleCancel} color="error" sx={{ color: '#ef4444' }}>
+                          <X size={20} />
+                        </IconButton>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
                 )}
                 
                 {combinedData.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50">
+                  <TableRow key={row.id} hover>
                     {/* Flight Number Column */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-8 w-8">
-                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                            <Plane className="h-4 w-4 text-blue-600" />
-                          </div>
-                        </div>
-                        <div className="mr-3">
-                          <div className="text-sm font-medium text-gray-900 text-right">
+                    <TableCell sx={{ textAlign: 'center' }}>
+                      <Stack direction="row" alignItems="center" spacing={2}>
+                        <Avatar sx={{ bgcolor: '#e0f2fe', width: 32, height: 32 }}>
+                          <Plane size={16} color="#3b82f6" />
+                        </Avatar>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
                             {editingItem === row.id ? (
-                              <input
-                                type="text"
+                            <TextField
+                              size="small"
                                 value={routeEditForm.flightNumber}
                                 onChange={(e) => {
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                                   setRouteEditForm({...routeEditForm, flightNumber: value});
                                 }}
-                                className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
-                                placeholder="1234"
+                              sx={{ width: 100 }}
+                              inputProps={{ 
+                                maxLength: 4,
+                                pattern: '[0-9]*',
+                                inputMode: 'numeric'
+                              }}
                               />
                             ) : (
                               `LY${(row.data as FlightRoute).flightNumber.padStart(3, '0')}`
                             )}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
+                        </Typography>
+                      </Stack>
+                    </TableCell>
 
                     {/* Departure City Column */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 text-right">
+                    <TableCell sx={{ textAlign: 'center' }}>
                         {editingItem === row.id ? (
-                          <div className="space-y-1">
-                            <input
-                              type="text"
+                        <Stack spacing={1}>
+                          <TextField
+                            size="small"
                               value={routeEditForm.departureCity}
                               onChange={(e) => setRouteEditForm({...routeEditForm, departureCity: e.target.value})}
                               placeholder="קוד עיר יציאה (TLV)"
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                            sx={{ width: '100%', '& .MuiInputBase-input': { textAlign: 'right' } }}
                             />
-                            <input
-                              type="text"
+                          <TextField
+                            size="small"
                               value={routeEditForm.departureCityHebrew}
                               onChange={(e) => setRouteEditForm({...routeEditForm, departureCityHebrew: e.target.value})}
                               placeholder="שם עברית"
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                            sx={{ width: '100%', '& .MuiInputBase-input': { textAlign: 'right' } }}
                             />
-                            <input
-                              type="text"
+                          <TextField
+                            size="small"
                               value={routeEditForm.departureCityEnglish}
                               onChange={(e) => setRouteEditForm({...routeEditForm, departureCityEnglish: e.target.value})}
                               placeholder="English name"
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
-                            />
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="font-medium text-right">{(row.data as FlightRoute).departureCityHebrew}</div>
-                            <div className="text-xs text-gray-500 text-right">{(row.data as FlightRoute).departureCityEnglish}</div>
-                          </div>
-                        )}
-                      </div>
-                    </td>
+                            sx={{ width: '100%', '& .MuiInputBase-input': { textAlign: 'left', direction: 'ltr' } }}
+                          />
+                        </Stack>
+                      ) : (
+                        <Stack>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            {language === 'he' ? (row.data as FlightRoute).departureCityHebrew : (row.data as FlightRoute).departureCityEnglish}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: '#718096' }}>
+                            {(row.data as FlightRoute).departureCity}
+                          </Typography>
+                        </Stack>
+                      )}
+                    </TableCell>
 
                     {/* Arrival City Column */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 text-right">
+                    <TableCell sx={{ textAlign: 'center' }}>
                         {editingItem === row.id ? (
-                          <div className="space-y-1">
-                            <input
-                              type="text"
+                        <Stack spacing={1}>
+                          <TextField
+                            size="small"
                               value={routeEditForm.arrivalCity}
                               onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCity: e.target.value})}
                               placeholder="קוד עיר נחיתה (JFK)"
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                            sx={{ width: '100%', '& .MuiInputBase-input': { textAlign: 'right' } }}
                             />
-                            <input
-                              type="text"
+                          <TextField
+                            size="small"
                               value={routeEditForm.arrivalCityHebrew}
                               onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCityHebrew: e.target.value})}
                               placeholder="שם עברית"
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                            sx={{ width: '100%', '& .MuiInputBase-input': { textAlign: 'right' } }}
                             />
-                            <input
-                              type="text"
+                          <TextField
+                            size="small"
                               value={routeEditForm.arrivalCityEnglish}
                               onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCityEnglish: e.target.value})}
                               placeholder="English name"
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
-                            />
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="font-medium text-right">{(row.data as FlightRoute).arrivalCityHebrew}</div>
-                            <div className="text-xs text-gray-500 text-right">{(row.data as FlightRoute).arrivalCityEnglish}</div>
-                          </div>
-                        )}
-                      </div>
-                    </td>
+                            sx={{ width: '100%', '& .MuiInputBase-input': { textAlign: 'left', direction: 'ltr' } }}
+                          />
+                        </Stack>
+                      ) : (
+                        <Stack>
+                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            {language === 'he' ? (row.data as FlightRoute).arrivalCityHebrew : (row.data as FlightRoute).arrivalCityEnglish}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: '#718096' }}>
+                            {(row.data as FlightRoute).arrivalCity}
+                          </Typography>
+                        </Stack>
+                      )}
+                    </TableCell>
 
                     {/* Airline Column */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 text-right">
+                    <TableCell sx={{ textAlign: 'center' }}>
                         {editingItem === row.id ? (
-                          <select
+                        <FormControl fullWidth size="small">
+                          <Select
                             value={routeEditForm.airline}
                             onChange={(e) => setRouteEditForm({...routeEditForm, airline: e.target.value as 'ELAL' | 'Sundor'})}
-                            className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                            sx={{ borderRadius: 2, backgroundColor: 'white' }}
                           >
-                            <option value="ELAL">EL AL</option>
-                            <option value="Sundor">Sundor</option>
-                          </select>
-                        ) : (
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            (row.data as FlightRoute).airline === 'ELAL' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-green-100 text-green-800'
-                          }`}>
-                            {(row.data as FlightRoute).airline === 'ELAL' ? 'EL AL' : 'Sundor'}
-                          </span>
-                        )}
-                      </div>
-                    </td>
+                            <MenuItem value="ELAL">EL AL</MenuItem>
+                            <MenuItem value="Sundor">Sundor</MenuItem>
+                          </Select>
+                        </FormControl>
+                      ) : (
+                        <Chip
+                          label={(row.data as FlightRoute).airline === 'ELAL' ? 'EL AL' : 'Sundor'}
+                          sx={{
+                            backgroundColor: (row.data as FlightRoute).airline === 'ELAL' ? '#dbeafe' : '#dcfce7',
+                            color: (row.data as FlightRoute).airline === 'ELAL' ? '#1e40af' : '#166534',
+                            fontWeight: 'bold',
+                            fontSize: '0.75rem',
+                          }}
+                        />
+                      )}
+                    </TableCell>
 
                     {/* Actions Column */}
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <TableCell sx={{ textAlign: 'center' }}>
                       {editingItem === row.id ? (
-                        <div className="flex justify-center space-x-2">
-                          <button
-                            onClick={handleSaveRoute}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            <Save className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={handleCancel}
-                            className="text-gray-600 hover:text-gray-900"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <Stack direction="row" spacing={1} justifyContent="center">
+                          <IconButton onClick={handleSaveRoute} color="primary" sx={{ color: '#10b981' }}>
+                            <Save size={20} />
+                          </IconButton>
+                          <IconButton onClick={handleCancel} color="error" sx={{ color: '#ef4444' }}>
+                            <X size={20} />
+                          </IconButton>
+                        </Stack>
                       ) : (
-                        <div className="flex justify-center space-x-2">
-                          <button
-                            onClick={() => handleEditRoute(row.data as FlightRoute)}
-                            className="text-blue-600 hover:text-blue-900"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteRoute((row.data as FlightRoute).flightNumber)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <Stack direction="row" spacing={1} justifyContent="center">
+                          <IconButton onClick={() => handleEditRoute(row.data as FlightRoute)} color="primary" sx={{ color: '#3b82f6' }}>
+                            <Edit2 size={20} />
+                          </IconButton>
+                          <IconButton onClick={() => handleDeleteRoute((row.data as FlightRoute).flightNumber)} color="error" sx={{ color: '#ef4444' }}>
+                            <Trash2 size={20} />
+                          </IconButton>
+                        </Stack>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
 
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      </Card>
+
+      {/* Modal for Add/Edit Route */}
+      <Modal
+        open={isModalOpen}
+        onClose={handleCancel}
+        closeAfterTransition
+        BackdropComponent={Backdrop}
+        BackdropProps={{
+          timeout: 500,
+          sx: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(8px)',
+          }
+        }}
+      >
+        <Fade in={isModalOpen}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: { xs: '90%', sm: '80%', md: '600px' },
+              maxHeight: '90vh',
+              overflow: 'auto',
+              bgcolor: 'background.paper',
+              borderRadius: 4,
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            {/* Modal Header */}
+            <Box
+              sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                p: 3,
+                borderRadius: '16px 16px 0 0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2,
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {modalMode === 'add' ? <Plus size={24} /> : <Edit2 size={24} />}
+                </Box>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                    {modalMode === 'add' ? t.destinationsTable.addNewRoute : 'עריכת מסלול טיסה'}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    {modalMode === 'add' ? 'הוסף מסלול טיסה חדש למערכת' : 'ערוך פרטי מסלול הטיסה'}
+                  </Typography>
+                </Box>
+              </Box>
+              <IconButton
+                onClick={handleCancel}
+                sx={{
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  },
+                }}
+              >
+                <X size={24} />
+              </IconButton>
+            </Box>
+
+            {/* Modal Content */}
+            <Box sx={{ p: 4 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 3 }}>
+                {/* Flight Number */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label={t.destinationsTable.flightNumber}
+                    value={routeEditForm.flightNumber}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                      setRouteEditForm({...routeEditForm, flightNumber: value});
+                    }}
+                    placeholder={t.destinationsTable.enterFlightNumber}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Plane size={20} color="#667eea" />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+
+                {/* Airline */}
+                <Box>
+                  <FormControl fullWidth>
+                    <InputLabel>חברת תעופה</InputLabel>
+                    <Select
+                      value={routeEditForm.airline}
+                      onChange={(e) => setRouteEditForm({...routeEditForm, airline: e.target.value as 'ELAL' | 'Sundor'})}
+                      label={t.destinationsTable.airline}
+                      sx={{
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      }}
+                    >
+                      <MenuItem value="ELAL">EL AL</MenuItem>
+                      <MenuItem value="Sundor">Sundor</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Box>
+
+                {/* Departure City */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label="עיר יציאה (קוד)"
+                    value={routeEditForm.departureCity}
+                    onChange={(e) => setRouteEditForm({...routeEditForm, departureCity: e.target.value.toUpperCase()})}
+                    placeholder="TLV"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <MapPin size={20} color="#667eea" />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+
+                {/* Arrival City */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label="עיר נחיתה (קוד)"
+                    value={routeEditForm.arrivalCity}
+                    onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCity: e.target.value.toUpperCase()})}
+                    placeholder="JFK"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <MapPin size={20} color="#667eea" />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+
+                {/* Departure City Hebrew */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label="עיר יציאה (עברית)"
+                    value={routeEditForm.departureCityHebrew}
+                    onChange={(e) => setRouteEditForm({...routeEditForm, departureCityHebrew: e.target.value})}
+                    placeholder="תל אביב"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+
+                {/* Departure City English */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label="עיר יציאה (אנגלית)"
+                    value={routeEditForm.departureCityEnglish}
+                    onChange={(e) => setRouteEditForm({...routeEditForm, departureCityEnglish: e.target.value})}
+                    placeholder="Tel Aviv"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+
+                {/* Arrival City Hebrew */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label="עיר נחיתה (עברית)"
+                    value={routeEditForm.arrivalCityHebrew}
+                    onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCityHebrew: e.target.value})}
+                    placeholder="ניו יורק"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+
+                {/* Arrival City English */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label="עיר נחיתה (אנגלית)"
+                    value={routeEditForm.arrivalCityEnglish}
+                    onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCityEnglish: e.target.value})}
+                    placeholder="New York"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+              </Box>
+
+              {/* Modal Actions */}
+              <Box sx={{ display: 'flex', gap: 2, mt: 4, justifyContent: 'flex-end' }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleCancel}
+                  startIcon={<X size={20} />}
+                  sx={{
+                    borderColor: '#d1d5db',
+                    color: '#6b7280',
+                    '&:hover': {
+                      borderColor: '#9ca3af',
+                      backgroundColor: '#f9fafb',
+                    },
+                  }}
+                >
+                  ביטול
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleSaveRoute}
+                  startIcon={<Save size={20} />}
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    px: 4,
+                    py: 1.5,
+                    borderRadius: 2,
+                    boxShadow: '0 8px 25px rgba(102, 126, 234, 0.4)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%)',
+                      boxShadow: '0 12px 35px rgba(102, 126, 234, 0.5)',
+                      transform: 'translateY(-2px)',
+                    },
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}
+                >
+                  {modalMode === 'add' ? 'הוסף מסלול' : 'שמור שינויים'}
+                </Button>
+              </Box>
+            </Box>
+          </Box>
+        </Fade>
+      </Modal>
+    </Container>
   );
 };
 

@@ -21,6 +21,7 @@ export interface MessageTemplate {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  createdBy?: string;
 }
 
 // Generated message structure
@@ -32,6 +33,9 @@ export interface GeneratedMessage {
   recipients: string[];
   status: 'draft' | 'sent' | 'failed';
   createdAt: string;
+  departureCity: string;
+  arrivalCity: string;
+  sentAt?: string;
 }
 
 // City data for El Al destinations
@@ -55,3 +59,18 @@ export interface FlightRoute {
   arrivalCityEnglish: string;
   airline: 'ELAL' | 'Sundor';
 }
+
+// Custom variable for templates
+export interface CustomVariable {
+  id: string;
+  name: string;
+  displayName: string;
+  displayNameEnglish: string;
+  type: 'text' | 'time' | 'date' | 'number';
+  placeholder: string;
+  placeholderEnglish: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+

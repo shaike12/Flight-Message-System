@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { MessageTemplate } from '../../types';
 import { 
-  getTemplates, 
+  fetchTemplates as getTemplates, 
   addTemplate as addTemplateToFirebase, 
   updateTemplate as updateTemplateInFirebase, 
   deleteTemplate as deleteTemplateFromFirebase,
@@ -20,8 +20,106 @@ const initialState: TemplatesState = {
   error: null,
 };
 
-// No default templates - user will create their own
-const defaultTemplates: MessageTemplate[] = [];
+// Default templates for the system
+const defaultTemplates: MessageTemplate[] = [
+  {
+    id: 'default-1',
+    name: 'תבנית ברירת מחדל - שינוי שעה',
+    content: `לקוח/ה יקר/ה,
+עקב סיבות תיפעוליות, טיסתך {flightNumber} מ{departureCity} ל{arrivalCity} ב{originalDate} שתוכננה להמריא בשעה {originalTime} תמריא בשעה {newTime}{newDate ? ' בתאריך {newDate}' : ''}.
+אנו מתנצלים על אי הנוחות ומאחלים טיסה נעימה,
+אל על`,
+    englishContent: `Dear Customer,
+Due to operational reasons, Flight {flightNumber} from {departureCity} to {arrivalCity}, originally scheduled to depart on {originalDate} at {originalTime}, will now depart at {newTime}{newDate ? ' on {newDate}' : ''}.
+We sincerely apologize for the inconvenience and wish you a pleasant flight.
+EL AL Israel Airlines`,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'default-2',
+    name: 'תבנית ברירת מחדל - שינוי מספר טיסה',
+    content: `לקוח/ה יקר/ה,
+עקב סיבות תיפעוליות, טיסתך {flightNumber} מ{departureCity} ל{arrivalCity} ב{originalDate} שתוכננה להמריא בשעה {originalTime} תמריא כטיסה {newFlightNumber} בשעה {newTime}{newDate ? ' בתאריך {newDate}' : ''}.
+אנו מתנצלים על אי הנוחות ומאחלים טיסה נעימה,
+אל על`,
+    englishContent: `Dear Customer,
+Due to operational reasons, Flight {flightNumber} from {departureCity} to {arrivalCity}, originally scheduled to depart on {originalDate} at {originalTime}, will now depart as Flight {newFlightNumber} at {newTime}{newDate ? ' on {newDate}' : ''}.
+We sincerely apologize for the inconvenience and wish you a pleasant flight.
+EL AL Israel Airlines`,
+    isActive: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'default-3',
+    name: 'תבנית עם שעות טרקלין ודלפקים',
+    content: `לקוח/ה יקר/ה,
+עקב סיבות תיפעוליות, טיסתך {flightNumber} מ{departureCity} ל{arrivalCity} ב{originalDate} שתוכננה להמריא בשעה {originalTime} תמריא בשעה {newTime}{newDate ? ' בתאריך {newDate}' : ''}.
+שעת פתיחת הטרקלין: {loungeOpenTime}
+שעת פתיחת הדלפקים: {checkinOpen}
+שעת סגירת הדלפקים: {checkinClose}
+אנו מתנצלים על אי הנוחות ומאחלים טיסה נעימה,
+אל על`,
+    englishContent: `Dear Customer,
+Due to operational reasons, Flight {flightNumber} from {departureCity} to {arrivalCity}, originally scheduled to depart on {originalDate} at {originalTime}, will now depart at {newTime}{newDate ? ' on {newDate}' : ''}.
+Lounge opening time: {loungeOpenTime}
+Check-in counter opening time: {checkinOpen}
+Check-in counter closing time: {checkinClose}
+We sincerely apologize for the inconvenience and wish you a pleasant flight.
+EL AL Israel Airlines`,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'default-4',
+    name: 'תבנית עם כל הפרמטרים',
+    content: `לקוח/ה יקר/ה,
+עקב סיבות תיפעוליות, טיסתך {flightNumber} מ{departureCity} ל{arrivalCity} ב{originalDate} שתוכננה להמריא בשעה {originalTime} תמריא בשעה {newTime}{newDate ? ' בתאריך {newDate}' : ''}.
+שעת פתיחת הטרקלין: {loungeOpenTime}
+שעת פתיחת דלפקים: {counterOpenTime}
+שעת פתיחת צ'ק-אין: {checkinOpen}
+שעת סגירת צ'ק-אין: {checkinClose}
+אנו מתנצלים על אי הנוחות ומאחלים טיסה נעימה,
+אל על`,
+    englishContent: `Dear Customer,
+Due to operational reasons, Flight {flightNumber} from {departureCity} to {arrivalCity}, originally scheduled to depart on {originalDate} at {originalTime}, will now depart at {newTime}{newDate ? ' on {newDate}' : ''}.
+Lounge opening time: {loungeOpenTime}
+Counter opening time: {counterOpenTime}
+Check-in opening time: {checkinOpen}
+Check-in closing time: {checkinClose}
+We sincerely apologize for the inconvenience and wish you a pleasant flight.
+EL AL Israel Airlines`,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'default-5',
+    name: 'טיסות מוצ״ש',
+    content: `לקוח/ה יקר/ה,
+עקב סיבות תיפעוליות, טיסתך {flightNumber} מ{departureCity} ל{arrivalCity} ב{originalDate} שתוכננה להמריא בשעה {originalTime} תמריא בשעה {newTime}{newDate ? ' בתאריך {newDate}' : ''}.
+שעת פתיחת הטרקלין: {loungeOpenTime}
+שעת פתיחת דלפקים: {counterOpenTime}
+שעת פתיחת צ'ק-אין: {checkinOpen}
+שעת סגירת צ'ק-אין: {checkinClose}
+אנו מתנצלים על אי הנוחות ומאחלים טיסה נעימה,
+אל על`,
+    englishContent: `Dear Customer,
+Due to operational reasons, Flight {flightNumber} from {departureCity} to {arrivalCity}, originally scheduled to depart on {originalDate} at {originalTime}, will now depart at {newTime}{newDate ? ' on {newDate}' : ''}.
+Lounge opening time: {loungeOpenTime}
+Counter opening time: {counterOpenTime}
+Check-in opening time: {checkinOpen}
+Check-in closing time: {checkinClose}
+We sincerely apologize for the inconvenience and wish you a pleasant flight.
+EL AL Israel Airlines`,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+];
 
 // Async thunk for fetching templates
 export const fetchTemplates = createAsyncThunk(
@@ -33,7 +131,12 @@ export const fetchTemplates = createAsyncThunk(
       if (templates.length === 0) {
         return defaultTemplates;
       }
-      return templates;
+      // Convert Firebase Timestamps to strings
+      return templates.map(template => ({
+        ...template,
+        createdAt: (template.createdAt as any)?.toDate?.()?.toISOString() || template.createdAt,
+        updatedAt: (template.updatedAt as any)?.toDate?.()?.toISOString() || template.updatedAt,
+      }));
     } catch (error) {
       console.error('Error fetching templates from Firebase, using defaults:', error);
       return defaultTemplates;
@@ -44,14 +147,14 @@ export const fetchTemplates = createAsyncThunk(
 // Async thunk for adding a new template
 export const addTemplate = createAsyncThunk(
   'templates/addTemplate',
-  async (template: Omit<MessageTemplate, 'id' | 'createdAt' | 'updatedAt'>) => {
+  async (template: Omit<MessageTemplate, 'id'>) => {
     try {
       const id = await addTemplateToFirebase(template);
       return {
         id,
         ...template,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: template.createdAt || new Date().toISOString(),
+        updatedAt: template.updatedAt || new Date().toISOString(),
       };
     } catch (error) {
       console.error('Error adding template to Firebase:', error);
@@ -63,11 +166,12 @@ export const addTemplate = createAsyncThunk(
 // Async thunk for updating a template
 export const updateTemplate = createAsyncThunk(
   'templates/updateTemplate',
-  async (template: MessageTemplate) => {
+  async (params: { id: string; template: Partial<MessageTemplate> }) => {
     try {
-      await updateTemplateInFirebase(template.id, template);
+      await updateTemplateInFirebase(params.id, params.template);
       return {
-        ...template,
+        id: params.id,
+        ...params.template,
         updatedAt: new Date().toISOString(),
       };
     } catch (error) {
@@ -94,10 +198,10 @@ export const deleteTemplateAsync = createAsyncThunk(
 // Async thunk for setting active template
 export const setActiveTemplateAsync = createAsyncThunk(
   'templates/setActiveTemplateAsync',
-  async (id: string) => {
+  async (params: { id: string; isActive: boolean }) => {
     try {
-      await setActiveTemplateInFirebase(id);
-      return id;
+      await setActiveTemplateInFirebase(params.id, params.isActive);
+      return params.id;
     } catch (error) {
       console.error('Error setting active template in Firebase:', error);
       throw error;
@@ -112,15 +216,10 @@ const templatesSlice = createSlice({
     deleteTemplate: (state, action: PayloadAction<string>) => {
       state.templates = state.templates.filter(template => template.id !== action.payload);
     },
-    setActiveTemplate: (state, action: PayloadAction<string>) => {
-      // Set all templates to inactive first
-      state.templates.forEach(template => {
-        template.isActive = false;
-      });
-      // Set the selected template as active
-      const template = state.templates.find(t => t.id === action.payload);
+    setActiveTemplate: (state, action: PayloadAction<{ id: string; isActive: boolean }>) => {
+      const template = state.templates.find(t => t.id === action.payload.id);
       if (template) {
-        template.isActive = true;
+        template.isActive = action.payload.isActive;
       }
     },
   },
@@ -144,19 +243,16 @@ const templatesSlice = createSlice({
       .addCase(updateTemplate.fulfilled, (state, action) => {
         const index = state.templates.findIndex(template => template.id === action.payload.id);
         if (index !== -1) {
-          state.templates[index] = action.payload;
+          state.templates[index] = { ...state.templates[index], ...action.payload };
         }
       })
       .addCase(deleteTemplateAsync.fulfilled, (state, action) => {
         state.templates = state.templates.filter(template => template.id !== action.payload);
       })
       .addCase(setActiveTemplateAsync.fulfilled, (state, action) => {
-        state.templates.forEach(template => {
-          template.isActive = false;
-        });
         const template = state.templates.find(t => t.id === action.payload);
         if (template) {
-          template.isActive = true;
+          template.isActive = !template.isActive;
         }
       });
   },

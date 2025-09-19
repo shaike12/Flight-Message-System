@@ -1,10 +1,12 @@
 import { configureStore } from '@reduxjs/toolkit';
-import flightsReducer from './slices/flightsSlice';
-import templatesReducer from './slices/templatesSlice';
-import messagesReducer from './slices/messagesSlice';
-import citiesReducer from './slices/citiesSlice';
-import flightRoutesReducer from './slices/flightRoutesSlice';
-import messageHistoryReducer from './slices/messageHistorySlice';
+import {
+  flightsReducer,
+  templatesReducer,
+  messagesReducer,
+  citiesReducer,
+  flightRoutesReducer
+} from './slices';
+import customVariablesReducer from './slices/customVariablesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -13,15 +15,8 @@ export const store = configureStore({
     messages: messagesReducer,
     cities: citiesReducer,
     flightRoutes: flightRoutesReducer,
-    messageHistory: messageHistoryReducer,
+    customVariables: customVariablesReducer,
   },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-        ignoredPaths: ['flightRoutes.routes.0.updatedAt', 'flightRoutes.routes.0.createdAt'],
-      },
-    }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

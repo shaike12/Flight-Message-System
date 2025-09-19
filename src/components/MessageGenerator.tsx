@@ -60,6 +60,8 @@ const MessageGenerator: React.FC<MessageGeneratorProps> = ({ flights, templates 
         flightId: selectedFlight.id,
         templateId: selectedTemplate.id,
         recipients: recipientsList,
+        departureCity: selectedFlight.departureCity,
+        arrivalCity: selectedFlight.arrivalCity,
       }));
       
       alert('ההודעה נוצרה בהצלחה!');

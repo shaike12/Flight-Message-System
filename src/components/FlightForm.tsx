@@ -1,11 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppDispatch } from '../store/hooks';
-import { addFlight } from '../store/slices/flightsSlice';
-import { addMessageToHistory } from '../store/slices/messageHistorySlice';
+import { fetchCities } from '../store/slices/citiesSlice';
+import { fetchTemplates } from '../store/slices/templatesSlice';
+import { fetchFlightRoutes } from '../store/slices/flightRoutesSlice';
 import { City, FlightRoute, MessageTemplate } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Plane, Calendar, Clock, MapPin, MessageSquare, Copy, Trash2, AlertTriangle } from 'lucide-react';
+import { Plane, Calendar, Clock, MapPin, Copy, Trash2, AlertTriangle, CheckCircle, RefreshCw, FileText } from 'lucide-react';
+import { 
+  Button, 
+  TextField, 
+  Select, 
+  MenuItem, 
+  FormControl, 
+  InputLabel, 
+  Paper, 
+  Box, 
+  Typography, 
+  Grid, 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  Chip, 
+  Alert, 
+  CircularProgress, 
+  IconButton, 
+  Tooltip, 
+  Divider, 
+  Stack, 
+  useTheme, 
+  useMediaQuery,
+  Autocomplete
+} from '@mui/material';
 
 interface FlightFormProps {
   cities: City[];
@@ -15,13 +41,31 @@ interface FlightFormProps {
 
 const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates }) => {
   const dispatch = useAppDispatch();
-  const { t, isRTL } = useLanguage();
-  // Get current time and date
-  const now = new Date();
-  const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
-  const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+  const { t, language } = useLanguage();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  const [formData, setFormData] = useState({
+  // Memoize props to prevent unnecessary re-renders
+  const memoizedCities = useMemo(() => cities, [cities]);
+  const memoizedFlightRoutes = useMemo(() => flightRoutes, [flightRoutes]);
+  const memoizedTemplates = useMemo(() => templates, [templates]);
+
+
+  // Get current time and date - use useMemo to prevent infinite loop
+  const { currentTime, currentDate } = useMemo(() => {
+  const now = new Date();
+    return {
+      currentTime: now.toTimeString().slice(0, 5), // HH:MM format
+      currentDate: now.toISOString().split('T')[0], // YYYY-MM-DD format
+    };
+  }, []); // Empty dependency array - only calculate once
+
+  const [formData, setFormData] = useState(() => {
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5);
+    const currentDate = now.toISOString().split('T')[0];
+    
+    return {
     flightNumber: '',
     newFlightNumber: '',
     originalTime: currentTime,
@@ -32,23 +76,25 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     arrivalCity: '',
     loungeOpenTime: '',
     counterOpenTime: '',
+      counterCloseTime: '',
+      internetCode: '',
+      // Dynamic custom variables will be added here
+    };
   });
 
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [generatedText, setGeneratedText] = useState<string>('');
   const [generatedEnglishText, setGeneratedEnglishText] = useState<string>('');
   const [errors, setErrors] = useState<{[key: string]: string}>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error' | null>(null);
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [copyButtonRef, setCopyButtonRef] = useState<HTMLButtonElement | null>(null);
-
+  const [autoFillStatus, setAutoFillStatus] = useState<{type: 'success' | 'error' | null, message: string}>({type: null, message: ''});
+  const [showAddRouteButton, setShowAddRouteButton] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Function to check which parameters are used in the selected template
-  const getTemplateParameters = (templateContent: string): Set<string> => {
+  const getTemplateParameters = useCallback((templateContent: string): Set<string> => {
     const parameterRegex = /\{([^}]+)\}/g;
     const parameters = new Set<string>();
     let match;
@@ -58,127 +104,137 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     }
     
     return parameters;
-  };
+  }, []);
 
-  // Get parameters used in the selected template
-  const selectedTemplateData = templates.find(t => t.id === selectedTemplate);
-  const templateParameters = selectedTemplateData ? getTemplateParameters(selectedTemplateData.content) : new Set<string>();
+  // Get selected template data
+  const selectedTemplateData = memoizedTemplates.find(t => t.id === selectedTemplate);
 
-  // Function to highlight template variables
-  const highlightTemplateVariables = (text: string): string => {
-    return text.replace(/\{([^}]+)\}/g, '<strong class="text-blue-600 font-bold">{$1}</strong>');
-  };
+  // Get which parameters are needed for the selected template
+  const templateParameters = selectedTemplateData ? 
+    getTemplateParameters(selectedTemplateData.content || '') : 
+    new Set<string>();
 
-  // Function to handle copy with toast
-  const handleCopy = async (text: string, buttonRef: HTMLButtonElement | null) => {
-    try {
-      // Remove HTML tags from text before copying
-      const cleanText = text.replace(/<[^>]*>/g, '');
-      await navigator.clipboard.writeText(cleanText);
+
+  // Function to handle copy to clipboard
+  const handleCopyToClipboard = useCallback((text: string, buttonRef: HTMLButtonElement | null) => {
+    if (buttonRef) {
       setCopyButtonRef(buttonRef);
+      navigator.clipboard.writeText(text).then(() => {
       setShowCopyToast(true);
       setTimeout(() => setShowCopyToast(false), 3000);
-    } catch (error) {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = text.replace(/<[^>]*>/g, '');
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setCopyButtonRef(buttonRef);
-      setShowCopyToast(true);
-      setTimeout(() => setShowCopyToast(false), 3000);
+      });
     }
-  };
+  }, []);
 
-  // Load form data from localStorage on component mount
+  // Copy Hebrew text
+  const copyHebrewText = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    if (generatedText) {
+      const buttonElement = e.currentTarget;
+      handleCopyToClipboard(generatedText, buttonElement);
+    }
+  }, [generatedText, handleCopyToClipboard]);
+
+  // Copy English text
+  const copyEnglishText = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    if (generatedEnglishText) {
+      const buttonElement = e.currentTarget;
+      handleCopyToClipboard(generatedEnglishText, buttonElement);
+    }
+  }, [generatedEnglishText, handleCopyToClipboard]);
+
+  // Load form data from localStorage and fetch cities on component mount
   useEffect(() => {
     const savedData = localStorage.getItem('flightFormData');
+    const savedTemplate = localStorage.getItem('selectedTemplate');
+    
     if (savedData) {
       try {
         const parsedData = JSON.parse(savedData);
-        setFormData(parsedData);
+        // Always update dates and times to current values, but keep other data
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0, 5);
+        const currentDate = now.toISOString().split('T')[0];
+        
+        setFormData(prev => ({
+          ...parsedData,
+          originalTime: currentTime,
+          newTime: currentTime,
+          originalDate: currentDate,
+          newDate: currentDate,
+          counterCloseTime: parsedData.counterCloseTime || '',
+          internetCode: parsedData.internetCode || ''
+        }));
       } catch (error) {
         console.error('Error loading saved form data:', error);
       }
     }
-  }, []);
+    
+    if (savedTemplate) {
+      setSelectedTemplate(savedTemplate);
+    }
+    
+    // Fetch cities, templates, and flight routes data
+    dispatch(fetchCities());
+    dispatch(fetchTemplates());
+    dispatch(fetchFlightRoutes());
+  }, [dispatch]);
+
 
   // Auto-save form data to localStorage with debouncing
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       try {
-        setAutoSaveStatus('saving');
         localStorage.setItem('flightFormData', JSON.stringify(formData));
-        setAutoSaveStatus('saved');
-        setTimeout(() => setAutoSaveStatus(null), 2000);
       } catch (error) {
-        setAutoSaveStatus('error');
-        setTimeout(() => setAutoSaveStatus(null), 3000);
+        console.error('Error saving form data:', error);
       }
     }, 1000); // 1 second debounce
 
     return () => clearTimeout(timeoutId);
   }, [formData]);
 
-  // Helper function to format time to 12-hour format with AM/PM
-  const formatTimeTo12Hour = (time24: string) => {
-    const [hours, minutes] = time24.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
-  };
-
-  // Validation function
-  const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
-
-    if (!formData.flightNumber.trim()) {
-      newErrors.flightNumber = 'מספר טיסה הוא שדה חובה';
-    } else if (!/^\d{1,4}$/.test(formData.flightNumber)) {
-      newErrors.flightNumber = 'מספר טיסה חייב להכיל 1-4 ספרות בלבד';
+  // Auto-save selected template to localStorage
+  useEffect(() => {
+    if (selectedTemplate) {
+      localStorage.setItem('selectedTemplate', selectedTemplate);
     }
+  }, [selectedTemplate]);
 
-    if (!formData.departureCity) {
-      newErrors.departureCity = t.flightForm.departureCity + ' ' + t.common.required;
-    }
-
-    if (!formData.arrivalCity) {
-      newErrors.arrivalCity = t.flightForm.arrivalCity + ' ' + t.common.required;
-    }
-
-    if (!formData.originalTime) {
-      newErrors.originalTime = 'שעה מקורית היא שדה חובה';
-    }
-
-    if (!formData.newTime) {
-      newErrors.newTime = t.flightForm.newTime + ' ' + t.common.required;
-    }
-
-    if (formData.departureCity === formData.arrivalCity && formData.departureCity) {
-      newErrors.arrivalCity = t.flightForm.arrivalCity + ' must be different from ' + t.flightForm.departureCity;
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const generateMessageText = () => {
+  // Update generated text whenever form data changes
+  useEffect(() => {
     if (!formData.flightNumber || !formData.departureCity || !formData.arrivalCity || 
         !formData.originalDate || !formData.originalTime || !formData.newTime) {
-      return '';
+      setGeneratedText('');
+      setGeneratedEnglishText('');
+      setError(null);
+      setIsGenerating(false);
+      return;
     }
 
     // Check if flight number exists in flight routes
-    const flightExists = flightRoutes.some(route => route.flightNumber === formData.flightNumber);
+    const flightExists = memoizedFlightRoutes.some(route => route.flightNumber === formData.flightNumber);
     if (!flightExists) {
-      return '';
+      setGeneratedText('');
+      setGeneratedEnglishText('');
+      setError(null);
+      setIsGenerating(false);
+      return;
     }
 
-    const departureCityName = cities.find(c => c.code === formData.departureCity)?.name || formData.departureCity;
-    const arrivalCityName = cities.find(c => c.code === formData.arrivalCity)?.name || formData.arrivalCity;
+    if (!selectedTemplateData) {
+      setGeneratedText('');
+      setGeneratedEnglishText('');
+      setError(null);
+      setIsGenerating(false);
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+
+    // Generate Hebrew message
+    const departureCityName = memoizedCities.find(c => c.code === formData.departureCity)?.name || formData.departureCity;
+    const arrivalCityName = memoizedCities.find(c => c.code === formData.arrivalCity)?.name || formData.arrivalCity;
     
     // Format date as DD.MM for Hebrew
     const originalDateObj = new Date(formData.originalDate);
@@ -187,134 +243,118 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       `${new Date(formData.newDate).getDate().toString().padStart(2, '0')}.${(new Date(formData.newDate).getMonth() + 1).toString().padStart(2, '0')}` : 
       originalDateFormatted;
 
-    // Format flight number with LY prefix
-    const formattedFlightNumber = formData.flightNumber.startsWith('LY') 
-      ? formData.flightNumber 
-      : `LY${formData.flightNumber.padStart(3, '0')}`;
-    
-    // Format new flight number with LY prefix if provided
-    const formattedNewFlightNumber = formData.newFlightNumber 
-      ? (formData.newFlightNumber.startsWith('LY') 
-          ? formData.newFlightNumber 
-          : `LY${formData.newFlightNumber.padStart(3, '0')}`)
-      : '';
+    const formattedFlightNumber = `LY${formData.flightNumber.padStart(3, '0')}`;
+    const formattedNewFlightNumber = formData.newFlightNumber ? `LY${formData.newFlightNumber.padStart(3, '0')}` : formattedFlightNumber;
 
-    // Get selected template or use default
-    const selectedTemplateObj = templates.find(t => t.id === selectedTemplate);
-    const templateContent = selectedTemplateObj?.content || `לקוח/ה יקר/ה,
-עקב סיבות תיפעוליות, טיסתך {flightNumber} מ{departureCity} ל{arrivalCity} ב{originalDate} שתוכננה להמריא בשעה {originalTime} תמריא בשעה {newTime}${'{newDate}' ? ' בתאריך {newDate}' : ''}.
-אנו מתנצלים על אי הנוחות ומאחלים טיסה נעימה,
-אל על`;
+    const templateContent = selectedTemplateData.content || '';
+    const hebrewText = templateContent
+      .replace('{flightNumber}', formData.flightNumber ? formattedFlightNumber : '***')
+      .replace('{newFlightNumber}', formData.newFlightNumber ? formattedNewFlightNumber : '***')
+      .replace('{departureCity}', formData.departureCity ? departureCityName : '***')
+      .replace('{arrivalCity}', formData.arrivalCity ? arrivalCityName : '***')
+      .replace('{originalDate}', formData.originalDate ? originalDateFormatted : '***')
+      .replace('{originalTime}', formData.originalTime ? formData.originalTime : '***')
+      .replace('{newTime}', formData.newTime ? formData.newTime : '***')
+      .replace('{newDate}', formData.newDate ? newDateFormatted : '***')
+      .replace('{loungeOpenTime}', formData.loungeOpenTime || '***')
+      .replace('{counterOpenTime}', formData.counterOpenTime || '***')
+      .replace('{counterCloseTime}', formData.counterCloseTime || '***')
+      .replace('{internetCode}', formData.internetCode || '***');
 
-    return templateContent
-      .replace('{flightNumber}', formattedFlightNumber)
-      .replace('{newFlightNumber}', formattedNewFlightNumber)
-      .replace('{departureCity}', departureCityName)
-      .replace('{arrivalCity}', arrivalCityName)
-      .replace('{originalDate}', originalDateFormatted)
-      .replace('{originalTime}', formData.originalTime)
-      .replace('{newTime}', formData.newTime)
-      .replace('{newDate}', newDateFormatted)
-      .replace('{loungeOpenTime}', formData.loungeOpenTime || '')
-      .replace('{counterOpenTime}', formData.counterOpenTime || '');
-  };
-
-  const generateEnglishMessageText = () => {
-    if (!formData.flightNumber || !formData.departureCity || !formData.arrivalCity || 
-        !formData.originalDate || !formData.originalTime || !formData.newTime) {
-      return '';
-    }
-
-    // Check if flight number exists in flight routes
-    const flightExists = flightRoutes.some(route => route.flightNumber === formData.flightNumber);
-    if (!flightExists) {
-      return '';
-    }
-
-    // For English message, use English city names from flight routes
-    const flightRoute = flightRoutes.find(route => route.flightNumber === formData.flightNumber);
-    const departureCityName = flightRoute?.departureCityEnglish || cities.find(c => c.code === formData.departureCity)?.englishName || formData.departureCity;
-    const arrivalCityName = flightRoute?.arrivalCityEnglish || cities.find(c => c.code === formData.arrivalCity)?.englishName || formData.arrivalCity;
+    // Generate English message
+    const flightRoute = memoizedFlightRoutes.find(route => route.flightNumber === formData.flightNumber);
+    const departureCityNameEnglish = flightRoute?.departureCityEnglish || memoizedCities.find(c => c.code === formData.departureCity)?.englishName || formData.departureCity;
+    const arrivalCityNameEnglish = flightRoute?.arrivalCityEnglish || memoizedCities.find(c => c.code === formData.arrivalCity)?.englishName || formData.arrivalCity;
     
     // Format date as Month DD for English
-    const originalDateObj = new Date(formData.originalDate);
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'];
-    const originalDateFormatted = `${monthNames[originalDateObj.getMonth()]} ${originalDateObj.getDate()}`;
-    const newDateFormatted = formData.newDate ? 
+    const originalDateFormattedEnglish = `${monthNames[originalDateObj.getMonth()]} ${originalDateObj.getDate()}`;
+    const newDateFormattedEnglish = formData.newDate ? 
       `${monthNames[new Date(formData.newDate).getMonth()]} ${new Date(formData.newDate).getDate()}` : 
-      originalDateFormatted;
+      originalDateFormattedEnglish;
 
-    // Format flight number with LY prefix
-    const formattedFlightNumber = formData.flightNumber.startsWith('LY') 
-      ? formData.flightNumber 
-      : `LY${formData.flightNumber.padStart(3, '0')}`;
-    
-    // Format new flight number with LY prefix if provided
-    const formattedNewFlightNumber = formData.newFlightNumber 
-      ? (formData.newFlightNumber.startsWith('LY') 
-          ? formData.newFlightNumber 
-          : `LY${formData.newFlightNumber.padStart(3, '0')}`)
-      : '';
+    const formatTimeTo12Hour = (time24: string) => {
+      const [hours, minutes] = time24.split(':');
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour % 12 || 12;
+      return `${hour12}:${minutes} ${ampm}`;
+    };
 
-    // Get selected template or use default
-    const selectedTemplateObj = templates.find(t => t.id === selectedTemplate);
-    const templateContent = selectedTemplateObj?.englishContent || `Dear Customer,
-Due to operational reasons, Flight {flightNumber} from {departureCity} to {arrivalCity}, originally scheduled to depart on {originalDate} at {originalTime}, will now depart at {newTime}${'{newDate}' ? ' on {newDate}' : ''}.
-We sincerely apologize for the inconvenience and wish you a pleasant flight.
-EL AL Israel Airlines`;
+    const englishTemplateContent = selectedTemplateData.englishContent || selectedTemplateData.content || '';
+    const englishText = englishTemplateContent
+      .replace('{flightNumber}', formData.flightNumber ? formattedFlightNumber : '***')
+      .replace('{newFlightNumber}', formData.newFlightNumber ? formattedNewFlightNumber : '***')
+      .replace('{departureCity}', formData.departureCity ? departureCityNameEnglish : '***')
+      .replace('{arrivalCity}', formData.arrivalCity ? arrivalCityNameEnglish : '***')
+      .replace('{originalDate}', formData.originalDate ? originalDateFormattedEnglish : '***')
+      .replace('{originalTime}', formData.originalTime ? formatTimeTo12Hour(formData.originalTime) : '***')
+      .replace('{newTime}', formData.newTime ? formatTimeTo12Hour(formData.newTime) : '***')
+      .replace('{newDate}', formData.newDate ? newDateFormattedEnglish : '***')
+      .replace('{loungeOpenTime}', formData.loungeOpenTime || '***')
+      .replace('{counterOpenTime}', formData.counterOpenTime || '***')
+      .replace('{counterCloseTime}', formData.counterCloseTime || '***')
+      .replace('{internetCode}', formData.internetCode || '***');
 
-    return templateContent
-      .replace('{flightNumber}', formattedFlightNumber)
-      .replace('{newFlightNumber}', formattedNewFlightNumber)
-      .replace('{departureCity}', departureCityName)
-      .replace('{arrivalCity}', arrivalCityName)
-      .replace('{originalDate}', originalDateFormatted)
-      .replace('{originalTime}', formatTimeTo12Hour(formData.originalTime))
-      .replace('{newTime}', formatTimeTo12Hour(formData.newTime))
-      .replace('{newDate}', newDateFormatted)
-      .replace('{loungeOpenTime}', formData.loungeOpenTime || '')
-      .replace('{counterOpenTime}', formData.counterOpenTime || '');
-  };
-
-  // Update generated text whenever form data changes
-  useEffect(() => {
-    const text = generateMessageText();
-    const englishText = generateEnglishMessageText();
-    setGeneratedText(text);
+    try {
+      setGeneratedText(hebrewText);
     setGeneratedEnglishText(englishText);
-  }, [formData, cities, selectedTemplate, templates]);
-
-  // Debug: Log templates when they change
-  useEffect(() => {
-    console.log('Templates loaded:', templates.length, templates);
-  }, [templates]);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה ביצירת ההודעה');
+      setGeneratedText('');
+      setGeneratedEnglishText('');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [formData, selectedTemplate, selectedTemplateData, memoizedCities, memoizedFlightRoutes]);
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault();
-        if (!isSubmitting) {
-          handleSubmit(e as any);
-        }
-      }
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        handleClearFields();
+        if (window.confirm(t.flightForm.clearFieldsConfirm)) {
+          setFormData({
+            flightNumber: '',
+            newFlightNumber: '',
+            originalTime: currentTime,
+            newTime: currentTime,
+            originalDate: currentDate,
+            newDate: currentDate,
+            departureCity: '',
+            arrivalCity: '',
+            loungeOpenTime: '',
+            counterOpenTime: '',
+            counterCloseTime: '',
+            internetCode: '',
+          });
+          setGeneratedText('');
+          setGeneratedEnglishText('');
+          setSelectedTemplate('');
+          setShowAddRouteButton(false);
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isSubmitting]);
+  }, [currentTime, currentDate]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
-    // Limit flight number to 4 digits maximum
-    if (name === 'flightNumber' && value.length > 4) {
+    // Limit flight number to 4 digits maximum and only allow numbers
+    if (name === 'flightNumber' || name === 'newFlightNumber') {
+      // Only allow digits and limit to 4 characters
+      const numericValue = value.replace(/\D/g, '').slice(0, 4);
+      if (numericValue !== value) {
+        e.target.value = numericValue;
+      }
+      if (numericValue.length > 4) {
       return;
+      }
     }
     
     setFormData(prev => {
@@ -324,11 +364,37 @@ EL AL Israel Airlines`;
       };
       
       // Auto-fill cities when flight number is entered
-      if (name === 'flightNumber' && value) {
-        const route = flightRoutes.find(route => route.flightNumber === value);
+      if (name === 'flightNumber') {
+        if (!value) {
+          // Clear everything when flight number is empty
+          setShowAddRouteButton(false);
+          setAutoFillStatus({type: null, message: ''});
+        } else {
+        const route = memoizedFlightRoutes.find(route => route.flightNumber === value);
         if (route) {
           newData.departureCity = route.departureCity;
           newData.arrivalCity = route.arrivalCity;
+          setAutoFillStatus({
+            type: 'success',
+            message: `נמצא מסלול: ${route.departureCityHebrew} → ${route.arrivalCityHebrew}`
+          });
+          setShowAddRouteButton(false); // Hide the button when route is found
+          // Clear status after 3 seconds
+          setTimeout(() => setAutoFillStatus({type: null, message: ''}), 3000);
+        } else {
+          // Clear cities if no route found
+          newData.departureCity = '';
+          newData.arrivalCity = '';
+          setAutoFillStatus({
+            type: 'error',
+            message: `לא נמצא מסלול למספר טיסה ${value}`
+          });
+          setShowAddRouteButton(true);
+          // Clear status after 3 seconds but keep the button
+          setTimeout(() => {
+            setAutoFillStatus({type: null, message: ''});
+          }, 3000);
+        }
         }
       }
       
@@ -337,7 +403,7 @@ EL AL Israel Airlines`;
   };
 
   const handleClearFields = () => {
-    if (window.confirm('האם אתה בטוח שברצונך לנקות את השדות?')) {
+    if (window.confirm(t.flightForm.clearAllFieldsConfirm)) {
       setFormData({
         flightNumber: '',
         newFlightNumber: '',
@@ -349,556 +415,909 @@ EL AL Israel Airlines`;
         arrivalCity: '',
         loungeOpenTime: '',
         counterOpenTime: '',
+        counterCloseTime: '',
+        internetCode: '',
       });
       setGeneratedText('');
       setGeneratedEnglishText('');
       setSelectedTemplate('');
+      setShowAddRouteButton(false);
     }
   };
 
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddRoute = () => {
+    // Find the selected cities in the destinations list to get full names
+    const departureCityData = Array.from(allDestinations.values()).find((city: any) => city.code === formData.departureCity);
+    const arrivalCityData = Array.from(allDestinations.values()).find((city: any) => city.code === formData.arrivalCity);
     
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setIsLoading(true);
-
-    try {
-      const messageText = generateMessageText();
-      const englishMessageText = generateEnglishMessageText();
-      setGeneratedText(messageText);
-      setGeneratedEnglishText(englishMessageText);
-      
-      dispatch(addFlight({
-        ...formData,
-        airline: 'ELAL',
-        status: 'delayed',
-      }));
-
-      // Add to message history
-      const selectedTemplateObj = templates.find(t => t.id === selectedTemplate);
-      dispatch(addMessageToHistory({
-        flightNumber: formData.flightNumber,
-        departureCity: formData.departureCity,
-        arrivalCity: formData.arrivalCity,
-        originalDate: formData.originalDate,
-        originalTime: formData.originalTime,
-        newTime: formData.newTime,
-        newDate: formData.newDate,
-        hebrewMessage: messageText,
-        englishMessage: englishMessageText,
-        templateId: selectedTemplate,
-        templateName: selectedTemplateObj?.name,
-      }));
-
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
-    } catch (error) {
-      console.error('Error adding flight:', error);
-      setErrors({ submit: 'שגיאה בשמירת הטיסה. אנא נסה שוב.' });
-    } finally {
-      setIsSubmitting(false);
-      setIsLoading(false);
-    }
+    // Prepare route data to pass to the destinations tab
+    const routeData = {
+      flightNumber: formData.flightNumber,
+      departureCity: formData.departureCity,
+      departureCityHebrew: departureCityData?.name || '',
+      departureCityEnglish: departureCityData?.englishName || '',
+      arrivalCity: formData.arrivalCity,
+      arrivalCityHebrew: arrivalCityData?.name || '',
+      arrivalCityEnglish: arrivalCityData?.englishName || '',
+      airline: 'ELAL'
+    };
+    
+    // Store the route data in localStorage for the destinations tab to pick up
+    localStorage.setItem('pendingRouteData', JSON.stringify(routeData));
+    
+    // Dispatch custom event to navigate to destinations tab
+    window.dispatchEvent(new CustomEvent('navigateToTab', { 
+      detail: 'destinations' 
+    }));
   };
 
-  const elAlCities = cities.filter(city => city.isElAlDestination);
+  // Create a comprehensive list of all available destinations
+  const allDestinations = useMemo(() => {
+    const destinations = new Map();
+    
+    // Add El Al cities
+    const elAlCities = [
+      { code: 'TLV', name: 'תל אביב', englishName: 'Tel Aviv' },
+      { code: 'JFK', name: 'ניו יורק', englishName: 'New York' },
+      { code: 'LAX', name: 'לוס אנג\'לס', englishName: 'Los Angeles' },
+      { code: 'LHR', name: 'לונדון', englishName: 'London' },
+      { code: 'CDG', name: 'פריז', englishName: 'Paris' },
+      { code: 'FCO', name: 'רומא', englishName: 'Rome' },
+      { code: 'VIE', name: 'וינה', englishName: 'Vienna' },
+      { code: 'MUC', name: 'מינכן', englishName: 'Munich' },
+      { code: 'ZUR', name: 'ציריך', englishName: 'Zurich' },
+      { code: 'BRU', name: 'בריסל', englishName: 'Brussels' },
+      { code: 'AMS', name: 'אמסטרדם', englishName: 'Amsterdam' },
+      { code: 'ATH', name: 'אתונה', englishName: 'Athens' },
+      { code: 'IST', name: 'איסטנבול', englishName: 'Istanbul' },
+      { code: 'SVO', name: 'מוסקבה', englishName: 'Moscow' },
+      { code: 'BKK', name: 'בנגקוק', englishName: 'Bangkok' },
+      { code: 'BOM', name: 'מומבאי', englishName: 'Mumbai' },
+      { code: 'JNB', name: 'יוהנסבורג', englishName: 'Johannesburg' }
+    ];
+
+    elAlCities.forEach(city => {
+      destinations.set(city.code, city);
+    });
+
+    // Add cities from flight routes
+    memoizedFlightRoutes.forEach(route => {
+      if (!destinations.has(route.departureCity)) {
+        destinations.set(route.departureCity, {
+          code: route.departureCity,
+          name: route.departureCityHebrew || route.departureCity,
+          englishName: route.departureCityEnglish || route.departureCity
+        });
+      }
+      if (!destinations.has(route.arrivalCity)) {
+        destinations.set(route.arrivalCity, {
+          code: route.arrivalCity,
+          name: route.arrivalCityHebrew || route.arrivalCity,
+          englishName: route.arrivalCityEnglish || route.arrivalCity
+        });
+      }
+    });
+
+    return Array.from(destinations.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [memoizedFlightRoutes]);
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <Box sx={{ maxWidth: '100%', mx: 'auto' }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 3 }}>
         {/* Form Section */}
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-4 py-5 sm:p-6">
-          <div className="flex items-center mb-4">
-            <Plane className="h-6 w-6 text-blue-600 ml-3" />
-            <h3 className="text-lg leading-6 font-medium text-gray-900">
+        <Box sx={{ flex: 1 }}>
+          <Card
+            elevation={0}
+            sx={{
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              borderRadius: 3,
+              overflow: 'hidden',
+              height: 'fit-content'
+            }}
+          >
+            <CardHeader
+              title={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2,
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                    }}
+                  >
+                    <Plane size={20} color="white" />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" sx={{ 
+                      fontWeight: 'bold',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent'
+                    }}>
               {t.flightForm.title}
-            </h3>
-            {autoSaveStatus && (
-              <div className="text-xs mr-4">
-                {autoSaveStatus === 'saving' && (
-                  <span className="text-blue-600 flex items-center">
-                    <svg className="animate-spin h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    שומר...
-                  </span>
-                )}
-                {autoSaveStatus === 'saved' && (
-                  <span className="text-green-600">נשמר</span>
-                )}
-                {autoSaveStatus === 'error' && (
-                  <span className="text-red-600">שגיאה בשמירה</span>
-                )}
-              </div>
-            )}
-          </div>
-          
-          <div className="text-xs text-gray-500 mb-6">
-            {t.flightForm.keyboardShortcuts}
-          </div>
+                    </Typography>
+                    <Typography variant="caption" sx={{ 
+                      color: 'text.secondary',
+                      fontSize: '0.75rem'
+                    }}>
+                      הזן פרטי טיסה ויצור הודעה
+                    </Typography>
+                  </Box>
+                </Box>
+              }
+              sx={{ 
+                pb: 1,
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
+                borderBottom: '1px solid rgba(0, 0, 0, 0.08)'
+              }}
+            />
+            <CardContent sx={{ p: 3 }}>
+              {/* Status Messages */}
+              {autoFillStatus.type && (
+                <Alert 
+                  severity={autoFillStatus.type === 'success' ? 'success' : 'error'}
+                  icon={autoFillStatus.type === 'success' ? <CheckCircle size={16} /> : <AlertTriangle size={16} />}
+                  sx={{ 
+                    mb: 2,
+                    borderRadius: 2,
+                    '& .MuiAlert-message': {
+                      fontSize: '0.875rem'
+                    }
+                  }}
+                >
+                  {autoFillStatus.message}
+                </Alert>
+              )}
 
-          {showSuccess && (
-            <div className="mb-4 bg-green-50 border border-green-200 rounded-md p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <Plane className="h-5 w-5 text-green-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-green-800">
-                    הטיסה נוספה בהצלחה!
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+              {/* Add Route Button */}
+              {showAddRouteButton && (
+                <Box sx={{ mb: 3 }}>
+                  <Button
+                    onClick={handleAddRoute}
+                    variant="contained"
+                    startIcon={<MapPin size={18} />}
+                    sx={{
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      borderRadius: 2,
+                      px: 3,
+                      py: 1.5,
+                      textTransform: 'none',
+                      fontWeight: 'bold',
+                      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                        boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)',
+                      }
+                    }}
+                  >
+                    {t.flightForm.addNewRoute}
+                  </Button>
+                </Box>
+              )}
 
-          {errors.submit && (
-            <div className="mb-4 bg-red-50 border border-red-200 rounded-md p-4">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <AlertTriangle className="h-5 w-5 text-red-400" />
-                </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-red-800">
-                    {errors.submit}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Flight Number - Required Field */}
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <label htmlFor="flightNumber" className="flex items-center text-sm font-medium text-red-800">
-                <Plane className="h-4 w-4 text-red-400 ml-3" />
-                {t.flightForm.flightNumber} <span className="text-red-500">*</span>
-              </label>
-              <div className="mt-1">
-                <input
-                  type="text"
+              {/* Form Fields Grid */}
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
+                {/* Flight Number */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label={t.flightForm.flightNumber}
                   name="flightNumber"
-                  id="flightNumber"
                   value={formData.flightNumber}
                   onChange={handleInputChange}
-                  placeholder="LY001"
-                  required
-                  className={`block w-full sm:text-sm rounded-md focus:ring-red-500 focus:border-red-500 ${
-                    errors.flightNumber ? 'border-red-300' : 'border-red-300'
-                  }`}
-                />
-              </div>
-              {errors.flightNumber && (
-                <p className="mt-1 text-sm text-red-600">{errors.flightNumber}</p>
-              )}
-            </div>
+                    inputProps={{
+                      maxLength: 4,
+                      pattern: "[0-9]*",
+                      inputMode: "numeric"
+                    }}
+                    placeholder={t.flightForm.flightNumberPlaceholder}
+                    error={!!errors.flightNumber}
+                    helperText={errors.flightNumber || "הזן מספר טיסה של עד 4 ספרות"}
+                    InputProps={{
+                      startAdornment: (
+                        <Plane size={18} style={{ marginRight: 8, color: '#667eea' }} />
+                      )
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                  />
+                </Box>
 
-            {/* New Flight Number - Only show if template uses this parameter */}
-            {templateParameters.has('newFlightNumber') && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <label htmlFor="newFlightNumber" className="flex items-center text-sm font-medium text-orange-800">
-                  <Plane className="h-4 w-4 text-orange-400 ml-3" />
-                  {t.flightForm.newFlightNumber} <span className="text-orange-500">*</span>
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
+                {/* New Flight Number - always reserve space */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label={t.flightForm.newFlightNumber}
                     name="newFlightNumber"
-                    id="newFlightNumber"
                     value={formData.newFlightNumber}
                     onChange={handleInputChange}
-                    placeholder="LY002"
-                    className="block w-full sm:text-sm rounded-md focus:ring-orange-500 focus:border-orange-500 border-orange-300"
+                    inputProps={{
+                      maxLength: 4,
+                      pattern: "[0-9]*",
+                      inputMode: "numeric"
+                    }}
+                    placeholder={t.flightForm.newFlightNumberPlaceholder}
+                    InputProps={{
+                      startAdornment: (
+                        <RefreshCw size={18} style={{ marginRight: 8, color: '#667eea' }} />
+                      )
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                    style={{
+                      visibility: templateParameters.has('newFlightNumber') ? 'visible' : 'hidden'
+                    }}
                   />
-                </div>
-              </div>
-            )}
+                </Box>
 
-            {/* Cities - Required Fields */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <label htmlFor="departureCity" className="flex items-center text-sm font-medium text-blue-800">
-                  <MapPin className="h-4 w-4 text-blue-400 ml-3" />
-                  {t.flightForm.departureCity} <span className="text-blue-500">*</span>
-                </label>
-                <div className="mt-1">
-                  <select
+                {/* Departure City */}
+                <Box>
+                  <FormControl fullWidth error={!!errors.departureCity}>
+                    <InputLabel>{t.flightForm.departureCity}</InputLabel>
+                    <Select
                     name="departureCity"
-                    id="departureCity"
                     value={formData.departureCity}
-                    onChange={handleInputChange}
-                    required
-                    className={`block w-full sm:text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.departureCity ? 'border-red-300' : 'border-blue-300'
-                    }`}
-                  >
-                    <option value="">{t.destinationsTable.selectDepartureCity}</option>
-                    {elAlCities.map((city) => (
-                      <option key={city.code} value={city.code}>
-                        {city.name} ({city.code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                      onChange={(e) => setFormData(prev => ({ ...prev, departureCity: e.target.value }))}
+                      label={t.flightForm.departureCity}
+                      startAdornment={<MapPin size={18} style={{ marginRight: 8, color: '#667eea' }} />}
+                      sx={{
+                        borderRadius: 2,
+                        paddingRight: '20px', // Add space for dropdown arrow
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>{t.flightForm.selectDepartureCity}</em>
+                      </MenuItem>
+                      {allDestinations.map((city) => (
+                        <MenuItem key={city.code} value={city.code}>
+                          {language === 'he' ? city.name : city.englishName} ({city.code})
+                        </MenuItem>
+                      ))}
+                    </Select>
                 {errors.departureCity && (
-                  <p className="mt-1 text-sm text-red-600">{errors.departureCity}</p>
-                )}
-              </div>
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                        {errors.departureCity}
+                      </Typography>
+                    )}
+                  </FormControl>
+                </Box>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <label htmlFor="arrivalCity" className="flex items-center text-sm font-medium text-blue-800">
-                  <MapPin className="h-4 w-4 text-blue-400 ml-3" />
-                  {t.flightForm.arrivalCity} <span className="text-blue-500">*</span>
-                </label>
-                <div className="mt-1">
-                  <select
+                {/* Arrival City */}
+                <Box>
+                  <FormControl fullWidth error={!!errors.arrivalCity}>
+                    <InputLabel>{t.flightForm.arrivalCity}</InputLabel>
+                    <Select
                     name="arrivalCity"
-                    id="arrivalCity"
                     value={formData.arrivalCity}
-                    onChange={handleInputChange}
-                    required
-                    className={`block w-full sm:text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.arrivalCity ? 'border-red-300' : 'border-blue-300'
-                    }`}
-                  >
-                    <option value="">{t.flightForm.selectArrivalCity}</option>
-                    {elAlCities.map((city) => (
-                      <option key={city.code} value={city.code}>
-                        {city.name} ({city.code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                      onChange={(e) => setFormData(prev => ({ ...prev, arrivalCity: e.target.value }))}
+                      label={t.flightForm.arrivalCity}
+                      startAdornment={<MapPin size={18} style={{ marginRight: 8, color: '#667eea' }} />}
+                      sx={{
+                        borderRadius: 2,
+                        paddingRight: '20px', // Add space for dropdown arrow
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>{t.flightForm.selectArrivalCity}</em>
+                      </MenuItem>
+                      {allDestinations.map((city) => (
+                        <MenuItem key={city.code} value={city.code}>
+                          {language === 'he' ? city.name : city.englishName} ({city.code})
+                        </MenuItem>
+                      ))}
+                    </Select>
                 {errors.arrivalCity && (
-                  <p className="mt-1 text-sm text-red-600">{errors.arrivalCity}</p>
-                )}
-              </div>
-            </div>
+                      <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                        {errors.arrivalCity}
+                      </Typography>
+                    )}
+                  </FormControl>
+                </Box>
 
-            {/* Original Date and Time - Required Fields */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <label htmlFor="originalDate" className="flex items-center text-sm font-medium text-green-800">
-                  <Calendar className="h-4 w-4 text-green-400 ml-3" />
-                  {t.flightForm.originalDate} <span className="text-green-500">*</span>
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="date"
+                {/* Original Date */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label={t.flightForm.originalDate}
                     name="originalDate"
-                    id="originalDate"
+                    type="date"
                     value={formData.originalDate}
                     onChange={handleInputChange}
-                    required
-                    className="block w-full sm:text-sm border-green-300 rounded-md focus:ring-green-500 focus:border-green-500"
+                    error={!!errors.originalDate}
+                    helperText={errors.originalDate}
+                    InputProps={{}}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
                   />
-                </div>
-              </div>
+                </Box>
 
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <label htmlFor="originalTime" className="flex items-center text-sm font-medium text-green-800">
-                  <Clock className="h-4 w-4 text-green-400 ml-3" />
-                  {t.flightForm.originalTime} <span className="text-green-500">*</span>
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="time"
-                    name="originalTime"
-                    id="originalTime"
-                    value={formData.originalTime}
-                    onChange={handleInputChange}
-                    required
-                    className="block w-full sm:text-sm border-green-300 rounded-md focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* New Date and Time - Required Fields */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <label htmlFor="newDate" className="flex items-center text-sm font-medium text-purple-800">
-                  <Calendar className="h-4 w-4 text-purple-400 ml-3" />
-                  {t.flightForm.newDateOptional}
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="date"
+                {/* New Date - always reserve space */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label={t.flightForm.newDate}
                     name="newDate"
-                    id="newDate"
+                    type="date"
                     value={formData.newDate}
                     onChange={handleInputChange}
-                    className="block w-full sm:text-sm border-purple-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                    InputProps={{}}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                    style={{
+                      visibility: templateParameters.has('newDate') ? 'visible' : 'hidden'
+                    }}
                   />
-                </div>
-              </div>
+                </Box>
 
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <label htmlFor="newTime" className="flex items-center text-sm font-medium text-purple-800">
-                  <Clock className="h-4 w-4 text-purple-400 ml-3" />
-                  {t.flightForm.newTime} <span className="text-purple-500">*</span>
-                </label>
-                <div className="mt-1">
-                  <input
+                {/* Original Time */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label={t.flightForm.originalTime}
+                    name="originalTime"
                     type="time"
+                    value={formData.originalTime}
+                    onChange={handleInputChange}
+                    error={!!errors.originalTime}
+                    helperText={errors.originalTime}
+                    InputProps={{}}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                  />
+                </Box>
+
+                {/* New Time */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label={t.flightForm.newTime}
                     name="newTime"
-                    id="newTime"
+                    type="time"
                     value={formData.newTime}
                     onChange={handleInputChange}
-                    required
-                    className="block w-full sm:text-sm border-purple-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
+                    error={!!errors.newTime}
+                    helperText={errors.newTime}
+                    InputProps={{}}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
                   />
-                </div>
-              </div>
-            </div>
+                </Box>
 
-            {/* Additional Times - Only show if template uses these parameters */}
-            {(templateParameters.has('loungeOpenTime') || templateParameters.has('counterOpenTime')) && (
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                {templateParameters.has('loungeOpenTime') && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <label htmlFor="loungeOpenTime" className="flex items-center text-sm font-medium text-yellow-800">
-                      <Clock className="h-4 w-4 text-yellow-400 ml-3" />
-                      {t.flightForm.loungeOpenTime} <span className="text-yellow-500">*</span>
-                    </label>
-                    <div className="mt-1">
-                      <input
+                {/* Check-in Counter Opening Time - always reserve space */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label={t.templateManager.parameters.counterOpenTime}
+                    name="counterOpenTime"
                         type="time"
+                    value={formData.counterOpenTime}
+                    onChange={handleInputChange}
+                    InputProps={{}}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                    style={{
+                      visibility: templateParameters.has('counterOpenTime') ? 'visible' : 'hidden'
+                    }}
+                  />
+                </Box>
+                
+
+                {/* Lounge Opening Time - always reserve space */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label={t.templateManager.parameters.loungeOpenTime}
                         name="loungeOpenTime"
-                        id="loungeOpenTime"
+                    type="time"
                         value={formData.loungeOpenTime}
                         onChange={handleInputChange}
-                        className="block w-full sm:text-sm border-yellow-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
-                      />
-                    </div>
-                  </div>
-                )}
+                    InputProps={{}}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                    style={{
+                      visibility: templateParameters.has('loungeOpenTime') ? 'visible' : 'hidden'
+                    }}
+                  />
+                </Box>
 
-                {templateParameters.has('counterOpenTime') && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <label htmlFor="counterOpenTime" className="flex items-center text-sm font-medium text-yellow-800">
-                      <Clock className="h-4 w-4 text-yellow-400 ml-3" />
-                      {t.flightForm.counterOpenTime} <span className="text-yellow-500">*</span>
-                    </label>
-                    <div className="mt-1">
-                      <input
+                {/* Counter Closing Time - always reserve space */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label={t.templateManager.parameters.counterCloseTime}
+                    name="counterCloseTime"
                         type="time"
-                        name="counterOpenTime"
-                        id="counterOpenTime"
-                        value={formData.counterOpenTime}
+                    value={formData.counterCloseTime}
                         onChange={handleInputChange}
-                        className="block w-full sm:text-sm border-yellow-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+                    InputProps={{}}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                    style={{
+                      visibility: templateParameters.has('counterCloseTime') ? 'visible' : 'hidden'
+                    }}
+                  />
+                </Box>
 
-            {/* Action Buttons */}
-            <div className="flex justify-between">
-              <button
-                type="button"
+                {/* Internet Code - always reserve space */}
+                <Box>
+                  <TextField
+                    fullWidth
+                    label={t.templateManager.parameters.internetCode || 'קוד אינטרנט'}
+                    name="internetCode"
+                    value={formData.internetCode || ''}
+                    onChange={handleInputChange}
+                    placeholder={t.flightForm.internetCodePlaceholder}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                    }}
+                    style={{
+                      visibility: templateParameters.has('internetCode') ? 'visible' : 'hidden'
+                    }}
+                  />
+                </Box>
+              </Box>
+
+              {/* Clear Button */}
+              <Box sx={{ mt: 6, display: 'flex', justifyContent: 'center' }}>
+                <Button 
+                  variant="contained" 
                 onClick={handleClearFields}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <Trash2 className="h-5 w-5 ml-3" />
-                {t.flightForm.clearFields}
-              </button>
-              
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin -ml-1 ml-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-{t.common.loading}
-                  </>
-                ) : (
-                  <>
-                    <Plane className="h-5 w-5 ml-3" />
-{t.flightForm.generateMessage}
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-          </div>
-        </div>
-
-        {/* Messages Section */}
-        <div className="space-y-6">
-          {/* Template Selection */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <MessageSquare className="h-5 w-5 text-blue-600 ml-3" />
-                <h4 className="text-lg font-medium text-gray-900">
-                  {t.flightForm.templateSelection}
-                </h4>
-              </div>
-            </div>
-            <div>
-              <select
-                name="template"
-                id="template"
-                value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
-                className="block w-full sm:text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">{t.flightForm.defaultTemplate}</option>
-                {templates.filter(template => template.isActive).map(template => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))}
-              </select>
-              {templates.filter(template => template.isActive).length === 0 && templates.length > 0 && (
-                <p className="mt-1 text-sm text-gray-500">{t.flightForm.noActiveTemplates}</p>
-              )}
-              {templates.length === 0 && (
-                <p className="mt-1 text-sm text-gray-500">{t.flightForm.loadingTemplates}</p>
-              )}
-            </div>
-            
-          </div>
-
-          {/* Hebrew Message */}
-          {generatedText && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <MessageSquare className="h-5 w-5 text-blue-600 ml-3" />
-                  <h4 className="text-lg font-medium text-blue-900">
-                    {t.flightForm.messageToSend} - {isRTL ? 'עברית' : 'Hebrew'}
-                  </h4>
-                </div>
-                <button
-                  ref={(el) => {
-                    if (el) setCopyButtonRef(el);
+                  startIcon={<Trash2 size={18} />}
+                  sx={{ 
+                    minWidth: '140px',
+                    py: 1.5,
+                    px: 3,
+                    borderRadius: 2,
+                    background: 'linear-gradient(135deg, #f56565 0%, #e53e3e 100%)',
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 12px rgba(245, 101, 101, 0.3)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #e53e3e 0%, #c53030 100%)',
+                      boxShadow: '0 6px 16px rgba(245, 101, 101, 0.4)',
+                    },
+                    '& .MuiButton-startIcon': { 
+                      marginRight: '8px',
+                      marginLeft: 0
+                    }
                   }}
-                  onClick={(e) => handleCopy(generatedText, e.currentTarget)}
-                  className="inline-flex items-center px-3 py-2 border border-blue-300 shadow-sm text-sm leading-4 font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  <Copy className="h-4 w-4 ml-3" />
-                  {t.common.copy}
-                </button>
-              </div>
-              <div className="bg-white p-4 rounded-md border">
-                <pre 
-                  className="text-sm text-gray-700 whitespace-pre-wrap font-sans"
-                  dangerouslySetInnerHTML={{ __html: highlightTemplateVariables(generatedText) }}
-                />
-              </div>
-            </div>
-          )}
+                {t.flightForm.clearFields}
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
 
-          {/* Flight not found message */}
-          {formData.flightNumber && !flightRoutes.some(route => route.flightNumber === formData.flightNumber) && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-              <div className="flex items-center mb-4">
-                <AlertTriangle className="h-5 w-5 text-yellow-600 ml-3" />
-                <h4 className="text-lg font-medium text-yellow-900">
-                  {t.flightForm.flightNotFound}
-                </h4>
-              </div>
-              <div className="text-sm text-yellow-800">
-                <p>{t.flightForm.flightNotFoundMessage}</p>
-                <p className="mt-2">{t.flightForm.checkFlightNumber}</p>
-              </div>
-            </div>
-          )}
+        {/* Message Generation Section */}
+        <Box sx={{ flex: 1 }}>
+          <Card
+            elevation={0}
+            sx={{
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              borderRadius: 3,
+              overflow: 'hidden',
+              height: 'fit-content'
+            }}
+          >
+            <CardHeader
+              title={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2,
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                    }}
+                  >
+                    <FileText size={20} color="white" />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" sx={{ 
+                      fontWeight: 'bold',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent'
+                    }}>
+                      בחירת תבנית
+                    </Typography>
+                    <Typography variant="caption" sx={{ 
+                      color: 'text.secondary',
+                      fontSize: '0.75rem'
+                    }}>
+                      בחר תבנית
+                    </Typography>
+                  </Box>
+                </Box>
+              }
+              sx={{ 
+                pb: 1,
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
+                borderBottom: '1px solid rgba(0, 0, 0, 0.08)'
+              }}
+            />
+            <CardContent sx={{ p: 3 }}>
+          {/* Template Selection */}
+              <Box sx={{ mb: 3 }}>
+                <Autocomplete
+                  fullWidth
+                  options={memoizedTemplates.filter(t => t.isActive)}
+                  getOptionLabel={(option) => option.name}
+                  value={memoizedTemplates.find(t => t.id === selectedTemplate) || null}
+                  onChange={(event, newValue) => {
+                    setSelectedTemplate(newValue ? newValue.id : '');
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label={t.flightForm.selectTemplateMessage}
+                      placeholder={t.flightForm.selectTemplate}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#667eea',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#667eea',
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <FileText size={16} style={{ marginRight: 8, color: '#667eea' }} />
+                        <Typography variant="body2">{option.name}</Typography>
+                      </Box>
+                    </Box>
+                  )}
+                  noOptionsText={t.flightForm.noTemplatesFound || "לא נמצאו תבניות"}
+                  clearOnEscape
+                  selectOnFocus
+                  handleHomeEndKeys
+                />
+              </Box>
+            
+              {/* Error Display */}
+              {error && (
+                <Alert 
+                  severity="error"
+                  icon={<AlertTriangle size={16} />}
+                  sx={{ 
+                    mb: 2,
+                    borderRadius: 2,
+                    '& .MuiAlert-message': {
+                      fontSize: '0.875rem'
+                    }
+                  }}
+                >
+                  {error}
+                </Alert>
+              )}
+
+              {/* Loading State */}
+              {isGenerating && (
+                <Alert 
+                  severity="info"
+                  icon={<CircularProgress size={16} />}
+                  sx={{ 
+                    mb: 2,
+                    borderRadius: 2,
+                    '& .MuiAlert-message': {
+                      fontSize: '0.875rem'
+                    }
+                  }}
+                >
+                  יוצר הודעה...
+                </Alert>
+              )}
+
+              {/* Generated Messages */}
+              {generatedText && !isGenerating && (
+                <Stack spacing={3}>
+                  {/* Hebrew Message */}
+                  <Box>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      mb: 2 
+                    }}>
+                      <Typography variant="subtitle2" sx={{ 
+                        fontWeight: 'bold',
+                        color: 'text.primary'
+                      }}>
+                        {t.flightForm.hebrewMessage}
+                      </Typography>
+                      <Button
+                        onClick={copyHebrewText}
+                        size="small"
+                        startIcon={<Copy size={14} />}
+                        sx={{
+                          borderRadius: 2,
+                          textTransform: 'none',
+                          fontSize: '0.75rem',
+                          px: 2,
+                          py: 0.5,
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          color: 'white',
+                          '&:hover': {
+                            background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                          }
+                        }}
+                      >
+                        {t.flightForm.copy}
+                      </Button>
+                    </Box>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 3,
+                        background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
+                        border: '1px solid rgba(102, 126, 234, 0.1)',
+                        borderRadius: 2,
+                        direction: 'rtl'
+                      }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          whiteSpace: 'pre-wrap',
+                          fontFamily: 'monospace',
+                          fontWeight: 'medium',
+                          lineHeight: 1.6,
+                          color: 'text.primary'
+                        }}
+                      >
+                        {generatedText}
+                      </Typography>
+                    </Paper>
+                  </Box>
 
           {/* English Message */}
           {generatedEnglishText && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center">
-                  <MessageSquare className="h-5 w-5 text-green-600 ml-3" />
-                  <h4 className="text-lg font-medium text-green-900">
-                    {t.flightForm.messageToSend} - {isRTL ? 'אנגלית' : 'English'}
-                  </h4>
-                </div>
-                <button
-                  ref={(el) => {
-                    if (el) setCopyButtonRef(el);
-                  }}
-                  onClick={(e) => handleCopy(generatedEnglishText, e.currentTarget)}
-                  className="inline-flex items-center px-3 py-2 border border-green-300 shadow-sm text-sm leading-4 font-medium rounded-md text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                >
-                  <Copy className="h-4 w-4 ml-3" />
-                  {t.common.copy}
-                </button>
-              </div>
-              <div className="bg-white p-4 rounded-md border" dir="ltr">
-                <pre 
-                  className="text-sm text-gray-700 whitespace-pre-wrap font-sans text-left"
-                  dangerouslySetInnerHTML={{ __html: highlightTemplateVariables(generatedEnglishText) }}
-                />
-              </div>
-            </div>
-          )}
+                    <Box>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between', 
+                        mb: 2 
+                      }}>
+                        <Typography variant="subtitle2" sx={{ 
+                          fontWeight: 'bold',
+                          color: 'text.primary'
+                        }}>
+                          {t.flightForm.englishMessage}
+                        </Typography>
+                        <Button
+                          onClick={copyEnglishText}
+                          size="small"
+                          startIcon={<Copy size={14} />}
+                          sx={{
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontSize: '0.75rem',
+                            px: 2,
+                            py: 0.5,
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            color: 'white',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                            }
+                          }}
+                        >
+                          {t.flightForm.copy}
+                        </Button>
+                      </Box>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 3,
+                          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
+                          border: '1px solid rgba(102, 126, 234, 0.1)',
+                          borderRadius: 2,
+                          direction: 'ltr'
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            whiteSpace: 'pre-wrap',
+                            fontFamily: 'monospace',
+                            fontWeight: 'medium',
+                            lineHeight: 1.6,
+                            color: 'text.primary'
+                          }}
+                        >
+                          {generatedEnglishText}
+                        </Typography>
+                      </Paper>
+                    </Box>
+                  )}
+                </Stack>
+              )}
 
-          {/* English Flight not found message */}
-          {formData.flightNumber && !flightRoutes.some(route => route.flightNumber === formData.flightNumber) && (
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
-              <div className="flex items-center mb-4">
-                <AlertTriangle className="h-5 w-5 text-orange-600 ml-3" />
-                <h4 className="text-lg font-medium text-orange-900">
-                  Flight Number Not Found
-                </h4>
-              </div>
-              <div className="text-sm text-orange-800">
-                <p>Flight number <strong>{formData.flightNumber}</strong> was not found in the flight list.</p>
-                <p className="mt-2">Please check the flight number or add it to the flight list in the "ניהול יעדים ומסלולים" tab.</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+              {/* Flight Not Found Warning */}
+              {formData.flightNumber && !memoizedFlightRoutes.some(route => route.flightNumber === formData.flightNumber) && (
+                <Alert 
+                  severity="warning"
+                  icon={<AlertTriangle size={16} />}
+                  sx={{ 
+                    mt: 2,
+                    borderRadius: 2,
+                    '& .MuiAlert-message': {
+                      fontSize: '0.875rem'
+                    }
+                  }}
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    {t.flightForm.flightNotFound}
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    {t.flightForm.flightNotFoundMessage}
+                  </Typography>
+                  <Typography variant="body2">
+                    {t.flightForm.checkFlightNumber}
+                  </Typography>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
+      </Box>
 
       {/* Copy Toast using Portal */}
       {showCopyToast && copyButtonRef && createPortal(
-        <div 
-          style={{
+        <Box
+          sx={{
             position: 'absolute',
-            top: copyButtonRef.offsetTop - 50,
-            left: copyButtonRef.offsetLeft + copyButtonRef.offsetWidth + 10,
+            top: (copyButtonRef.offsetTop || 0) - 50,
+            left: (copyButtonRef.offsetLeft || 0) + (copyButtonRef.offsetWidth || 0) + 10,
             zIndex: 9999,
-            backgroundColor: '#10b981',
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
             color: 'white',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            px: 2,
+            py: 1,
+            borderRadius: 2,
+            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
             display: 'flex',
             alignItems: 'center',
-            border: '1px solid #059669',
-            fontFamily: 'Arial, sans-serif',
-            fontSize: '14px',
+            gap: 1,
+            border: '1px solid rgba(5, 150, 105, 0.3)',
+            fontSize: '0.875rem',
+            fontWeight: '500',
             whiteSpace: 'nowrap',
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            backdropFilter: 'blur(10px)'
           }}
         >
-          <Copy className="h-4 w-4 mr-1" />
-          <span style={{ fontWeight: '500' }}>הועתק!</span>
-        </div>,
-        copyButtonRef.offsetParent || document.body
+          <CheckCircle size={16} />
+          <Typography variant="body2" sx={{ fontWeight: 'inherit' }}>
+            {t.common.copy}!
+          </Typography>
+        </Box>,
+        (copyButtonRef.offsetParent as Element) || document.body
       )}
-      
-    </div>
+    </Box>
   );
 };
 

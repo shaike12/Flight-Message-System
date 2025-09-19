@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { FlightRoute } from '../../types';
 import { 
-  getFlightRoutes, 
+  fetchFlightRoutes as getFlightRoutes, 
   addFlightRoute as addFlightRouteToFirebase, 
   updateFlightRoute as updateFlightRouteInFirebase, 
   deleteFlightRoute as deleteFlightRouteFromFirebase 
@@ -19,16 +19,36 @@ const initialState: FlightRoutesState = {
   error: null,
 };
 
+// Default flight routes based on EL AL actual flight numbers and destinations
+const defaultRoutes: FlightRoute[] = [
+  {
+    id: 'route-1',
+    flightNumber: '002',
+    departureCity: 'TLV',
+    departureCityHebrew: 'תל אביב',
+    departureCityEnglish: 'Tel Aviv',
+    arrivalCity: 'JFK',
+    arrivalCityHebrew: 'ניו יורק',
+    arrivalCityEnglish: 'New York',
+    airline: 'ELAL'
+  },
+  
+];
+
 // Async thunks for Firebase operations
 export const fetchFlightRoutes = createAsyncThunk(
   'flightRoutes/fetchFlightRoutes',
   async () => {
     try {
       const routes = await getFlightRoutes();
+      // If no routes in Firebase, return default routes
+      if (routes.length === 0) {
+        return defaultRoutes;
+      }
       return routes;
     } catch (error) {
-      console.error('Error fetching flight routes from Firebase:', error);
-      throw error;
+      console.error('Error fetching flight routes from Firebase, using defaults:', error);
+      return defaultRoutes;
     }
   }
 );

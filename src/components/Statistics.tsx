@@ -1,19 +1,63 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '../store/hooks';
-import { BarChart3, MessageSquare, Send, Clock, TrendingUp, Users } from 'lucide-react';
+import { BarChart3, MessageSquare, Send, Clock, TrendingUp, Users, Plane, FileText, UserCheck, Activity, Database, Calendar } from 'lucide-react';
+import { GeneratedMessage, Flight, MessageTemplate } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
+import { 
+  Box, 
+  Card, 
+  CardContent, 
+  Typography, 
+  Grid, 
+  Paper, 
+  LinearProgress, 
+  Chip, 
+  Avatar, 
+  List, 
+  ListItem, 
+  ListItemAvatar, 
+  ListItemText, 
+  Divider,
+  Container,
+  Stack,
+  IconButton,
+  Tooltip
+} from '@mui/material';
 
 const Statistics: React.FC = () => {
-  const { messages } = useAppSelector((state) => state.messageHistory);
+  const { t } = useLanguage();
+  const { messages } = useAppSelector((state) => state.messages);
   const { flights } = useAppSelector((state) => state.flights);
   const { templates } = useAppSelector((state) => state.templates);
+  const { routes: flightRoutes } = useAppSelector((state) => state.flightRoutes);
+  const { cities } = useAppSelector((state) => state.cities);
 
   // Calculate statistics
   const totalMessages = messages.length;
-  const sentMessages = messages.filter(msg => msg.sentAt).length;
+  const sentMessages = messages.filter((msg: GeneratedMessage) => msg.status === 'sent').length;
   const pendingMessages = totalMessages - sentMessages;
   const totalFlights = flights.length;
-  const activeTemplates = templates.filter(t => t.isActive).length;
+  const activeTemplates = templates.filter((t: MessageTemplate) => t.isActive).length;
   const totalTemplates = templates.length;
+  const totalFlightRoutes = flightRoutes.length;
+  const totalCities = cities.length;
+  
+  // Calculate updated flights (flights with recent updates)
+  const updatedFlights = flights.filter((flight: Flight) => {
+    const updateDate = new Date((flight as any).updatedAt || (flight as any).createdAt || new Date());
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return updateDate > weekAgo;
+  }).length;
+
+  // Mock user activity data (in real app, this would come from backend)
+  const [userActivity, setUserActivity] = useState([
+    { id: 1, name: 'שי שמואל', action: 'יצר תבנית חדשה', time: 'לפני 2 שעות', avatar: 'ש' },
+    { id: 2, name: 'מנהל מערכת', action: 'עדכן מסלול טיסה', time: 'לפני 4 שעות', avatar: 'מ' },
+    { id: 3, name: 'משתמש 1', action: 'שלח הודעה', time: 'לפני 6 שעות', avatar: 'מ' },
+    { id: 4, name: 'משתמש 2', action: 'יצר תבנית חדשה', time: 'אתמול', avatar: 'מ' },
+    { id: 5, name: 'מנהל מערכת', action: 'הוסיף עיר חדשה', time: 'לפני 2 ימים', avatar: 'מ' },
+  ]);
 
   // Messages by day (last 7 days)
   const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -24,172 +68,452 @@ const Statistics: React.FC = () => {
 
   const messagesByDay = last7Days.map(date => ({
     date,
-    count: messages.filter(msg => msg.createdAt.startsWith(date)).length
+    count: messages.filter((msg: GeneratedMessage) => msg.createdAt.startsWith(date)).length
   }));
 
   // Most used templates
-  const templateUsage = templates.map(template => ({
+  const templateUsage = templates.map((template: MessageTemplate) => ({
     name: template.name,
-    count: messages.filter(msg => msg.templateId === template.id).length
-  })).sort((a, b) => b.count - a.count);
+    count: messages.filter((msg: GeneratedMessage) => msg.templateId === template.id).length
+  })).sort((a: {name: string, count: number}, b: {name: string, count: number}) => b.count - a.count);
 
   // Most common routes
-  const routeUsage = messages.reduce((acc, msg) => {
+  const routeUsage = messages.reduce((acc: Record<string, number>, msg: GeneratedMessage) => {
     const route = `${msg.departureCity} → ${msg.arrivalCity}`;
     acc[route] = (acc[route] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   const topRoutes = Object.entries(routeUsage)
-    .map(([route, count]) => ({ route, count }))
-    .sort((a, b) => b.count - a.count)
+    .map(([route, count]) => ({ route, count: count as number }))
+    .sort((a: {route: string, count: number}, b: {route: string, count: number}) => b.count - a.count)
     .slice(0, 5);
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="flex items-center mb-6">
-            <BarChart3 className="h-6 w-6 text-blue-600 mr-3" />
-            <h3 className="text-lg leading-6 font-medium text-gray-900">
-              סטטיסטיקות מערכת
-            </h3>
-          </div>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <BarChart3 size={24} color="white" />
+          </Box>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#1a202c' }} >
+              {t.statistics.title}
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#718096' }}>
+              {t.statistics.systemOverview}
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
 
-          {/* Overview Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-blue-50 p-6 rounded-lg">
-              <div className="flex items-center">
-                <MessageSquare className="h-8 w-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-blue-600">סה"כ הודעות</p>
-                  <p className="text-2xl font-bold text-blue-900">{totalMessages}</p>
-                </div>
-              </div>
-            </div>
+      {/* Main Statistics Cards */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
+        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              height: '100%',
+            }}
+          >
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} style={{ marginLeft: '10px' }} >
+                  <MessageSquare size={24} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold' }} >
+                    {totalMessages}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    {t.statistics.totalMessages}
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
 
-            <div className="bg-green-50 p-6 rounded-lg">
-              <div className="flex items-center">
-                <Send className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-green-600">הודעות שנשלחו</p>
-                  <p className="text-2xl font-bold text-green-900">{sentMessages}</p>
-                </div>
-              </div>
-            </div>
+        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
+              color: 'white',
+              height: '100%',
+            }}
+          >
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} style={{ marginLeft: '10px' }} >
+                  <Send size={24} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                    {sentMessages}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    {t.statistics.sentMessages}
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
 
-            <div className="bg-yellow-50 p-6 rounded-lg">
-              <div className="flex items-center">
-                <Clock className="h-8 w-8 text-yellow-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-yellow-600">הודעות ממתינות</p>
-                  <p className="text-2xl font-bold text-yellow-900">{pendingMessages}</p>
-                </div>
-              </div>
-            </div>
+        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #ed8936 0%, #dd6b20 100%)',
+              color: 'white',
+              height: '100%',
+            }}
+          >
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} style={{ marginLeft: '10px' }}>
+                  <Clock size={24} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                    {pendingMessages}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    {t.statistics.pendingMessages}
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
 
-            <div className="bg-purple-50 p-6 rounded-lg">
-              <div className="flex items-center">
-                <TrendingUp className="h-8 w-8 text-purple-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-purple-600">תבניות פעילות</p>
-                  <p className="text-2xl font-bold text-purple-900">{activeTemplates}/{totalTemplates}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #9f7aea 0%, #805ad5 100%)',
+              color: 'white',
+              height: '100%',
+            }}
+          >
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} style={{ marginLeft: '10px' }}>
+                  <FileText size={24} />
+                </Avatar>
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                    {activeTemplates}/{totalTemplates}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                    {t.statistics.activeTemplates}
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
+      </Box>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Messages by Day */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h4 className="text-lg font-medium text-gray-900 mb-4">הודעות לפי יום (7 ימים אחרונים)</h4>
-              <div className="space-y-3">
+      {/* System Data Cards */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
+        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar sx={{ bgcolor: '#e6fffa' }} style={{ marginLeft: '10px' }}>
+                  <Plane size={24} color="#319795" />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1a202c' }}>
+                    {totalFlightRoutes}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#718096' }}>
+                    {t.statistics.flightRoutes}
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar sx={{ bgcolor: '#fef5e7' }} style={{ marginLeft: '10px' }}>
+                  <Activity size={24} color="#d69e2e" />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1a202c' }}>
+                    {updatedFlights}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#718096' }}>
+                    {t.statistics.updatedFlights}
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar sx={{ bgcolor: '#e6f3ff' }} style={{ marginLeft: '10px' }}>
+                  <Database size={24} color="#3182ce" />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1a202c' }}>
+                    {totalCities}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#718096' }}>
+                    {t.statistics.citiesInSystem}
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Box sx={{ flex: '1 1 250px', minWidth: '250px' }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar sx={{ bgcolor: '#f0fff4' }} style={{ marginLeft: '10px' }}>
+                  <UserCheck size={24} color="#38a169" />
+                </Avatar>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: '#1a202c' }}>
+                    {userActivity.length}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#718096' }}>
+                    {t.statistics.userActivities}
+                  </Typography>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
+      </Box>
+
+      {/* Charts and Activity */}
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        {/* Messages by Day */}
+        <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Calendar size={20} />
+                {t.statistics.messagesByDay}
+              </Typography>
+              <Stack spacing={2}>
                 {messagesByDay.map(({ date, count }) => (
-                  <div key={date} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">
-                      {new Date(date).toLocaleDateString('he-IL')}
-                    </span>
-                    <div className="flex items-center">
-                      <div className="w-32 bg-gray-200 rounded-full h-2 mr-3">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{ width: `${Math.max(5, (count / Math.max(...messagesByDay.map(d => d.count), 1)) * 100)}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium text-gray-900 w-8 text-left">{count}</span>
-                    </div>
-                  </div>
+                  <Box key={date}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                      <Typography variant="body2" sx={{ color: '#718096' }}>
+                        {new Date(date).toLocaleDateString('he-IL')}
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        {count}
+                      </Typography>
+                    </Stack>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.max(5, (count / Math.max(...messagesByDay.map(d => d.count), 1)) * 100)}
+                      sx={{
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: '#e2e8f0',
+                        '& .MuiLinearProgress-bar': {
+                          borderRadius: 4,
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        },
+                      }}
+                    />
+                  </Box>
                 ))}
-              </div>
-            </div>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
 
-            {/* Top Templates */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h4 className="text-lg font-medium text-gray-900 mb-4">תבניות בשימוש</h4>
-              <div className="space-y-3">
-                {templateUsage.slice(0, 5).map(({ name, count }) => (
-                  <div key={name} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 truncate flex-1 mr-3">{name}</span>
-                    <div className="flex items-center">
-                      <div className="w-24 bg-gray-200 rounded-full h-2 mr-3">
-                        <div
-                          className="bg-green-600 h-2 rounded-full"
-                          style={{ width: `${Math.max(5, (count / Math.max(...templateUsage.map(t => t.count), 1)) * 100)}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium text-gray-900 w-8 text-left">{count}</span>
-                    </div>
-                  </div>
+        {/* Top Templates */}
+        <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <FileText size={20} />
+                {t.statistics.messagesByTemplate}
+              </Typography>
+              <Stack spacing={2}>
+                {templateUsage.slice(0, 5).map(({ name, count }: {name: string, count: number}) => (
+                  <Box key={name}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                      <Typography variant="body2" sx={{ color: '#718096', flex: 1, mr: 2 }}>
+                        {name}
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        {count}
+                      </Typography>
+                    </Stack>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.max(5, (count / Math.max(...templateUsage.map((t: {name: string, count: number}) => t.count), 1)) * 100)}
+                      sx={{
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: '#e2e8f0',
+                        '& .MuiLinearProgress-bar': {
+                          borderRadius: 4,
+                          background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
+                        },
+                      }}
+                    />
+                  </Box>
                 ))}
-              </div>
-            </div>
-          </div>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
 
-          {/* Top Routes */}
-          <div className="mt-8 bg-gray-50 p-6 rounded-lg">
-            <h4 className="text-lg font-medium text-gray-900 mb-4">מסלולים פופולריים</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {topRoutes.map(({ route, count }) => (
-                <div key={route} className="bg-white p-4 rounded-lg border">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Users className="h-4 w-4 text-gray-400 mr-2" />
-                      <span className="text-sm font-medium text-gray-900">{route}</span>
-                    </div>
-                    <span className="text-lg font-bold text-blue-600">{count}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* User Activity */}
+        <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Users size={20} />
+{t.statistics.userActivityHistory}
+              </Typography>
+              <List>
+                {userActivity.map((user, index) => (
+                  <React.Fragment key={user.id}>
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemAvatar>
+                        <Avatar sx={{ bgcolor: '#667eea', color: 'white' }}>
+                          {user.avatar}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Stack direction="row" justifyContent="space-between" alignItems="center">
+                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                              {user.name}
+                            </Typography>
+                            <Chip
+                              label={user.time}
+                              size="small"
+                              sx={{
+                                backgroundColor: '#f7fafc',
+                                color: '#718096',
+                                fontSize: '0.75rem',
+                              }}
+                            />
+                          </Stack>
+                        }
+                        secondary={
+                          <Typography variant="body2" sx={{ color: '#718096' }}>
+                            {user.action}
+                          </Typography>
+                        }
+                      />
+                    </ListItem>
+                    {index < userActivity.length - 1 && <Divider />}
+                  </React.Fragment>
+                ))}
+              </List>
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* Top Routes */}
+        <Box sx={{ flex: '1 1 400px', minWidth: '400px' }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Plane size={20} />
+{t.statistics.popularRoutes}
+              </Typography>
+              <Stack spacing={2}>
+                {topRoutes.map(({ route, count }: {route: string, count: number}) => (
+                  <Paper
+                    key={route}
+                    sx={{
+                      p: 2,
+                      background: 'linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%)',
+                      border: '1px solid #e2e8f0',
+                    }}
+                  >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Users size={16} color="#718096" />
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          {route}
+                        </Typography>
+                      </Stack>
+                      <Chip
+                        label={count}
+                        sx={{
+                          backgroundColor: '#667eea',
+                          color: 'white',
+                          fontWeight: 'bold',
+                        }}
+                      />
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
+      </Box>
 
           {/* Summary */}
-          <div className="mt-8 bg-blue-50 p-6 rounded-lg">
-            <h4 className="text-lg font-medium text-blue-900 mb-3">סיכום</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <span className="text-blue-700 font-medium">אחוז הודעות שנשלחו:</span>
-                <span className="ml-2 text-blue-900 font-bold">
-                  {totalMessages > 0 ? Math.round((sentMessages / totalMessages) * 100) : 0}%
-                </span>
-              </div>
-              <div>
-                <span className="text-blue-700 font-medium">ממוצע הודעות ליום:</span>
-                <span className="ml-2 text-blue-900 font-bold">
-                  {Math.round(totalMessages / 7 * 10) / 10}
-                </span>
-              </div>
-              <div>
-                <span className="text-blue-700 font-medium">תבניות בשימוש:</span>
-                <span className="ml-2 text-blue-900 font-bold">
-                  {templateUsage.filter(t => t.count > 0).length}/{totalTemplates}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      <Card sx={{ mt: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 3 }}>
+{t.statistics.performanceSummary}
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+            <Box sx={{ flex: '1 1 200px', textAlign: 'center' }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                {totalMessages > 0 ? Math.round((sentMessages / totalMessages) * 100) : 0}%
+              </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {t.statistics.sentMessagesPercentage}
+                </Typography>
+            </Box>
+            <Box sx={{ flex: '1 1 200px', textAlign: 'center' }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                {Math.round(totalMessages / 7 * 10) / 10}
+              </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {t.statistics.averageMessagesPerDay}
+                </Typography>
+            </Box>
+            <Box sx={{ flex: '1 1 200px', textAlign: 'center' }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                {templateUsage.filter((t: {name: string, count: number}) => t.count > 0).length}/{totalTemplates}
+              </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {t.statistics.templatesInUse}
+                </Typography>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </Container>
   );
 };
 

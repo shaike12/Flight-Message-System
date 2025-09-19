@@ -1,11 +1,33 @@
 export const en = {
+  // App
+  app: {
+    title: 'Flight Message System',
+    subtitle: 'Automated message management for El Al flights'
+  },
+
+  header: {
+    title: 'Flight Message System',
+    subtitle: 'EL AL flight message management',
+    welcome: 'Welcome',
+    admin: 'Admin',
+    user: 'User',
+    settings: 'Settings',
+    logout: 'Logout'
+  },
+
   // Navigation
   navigation: {
+    overview: 'Overview',
+    flights: 'Flights',
+    messages: 'Messages',
+    destinations: 'Destinations',
+    templates: 'Templates',
+    statistics: 'Statistics',
+    variables: 'Variable Management',
     createMessage: 'Create Message',
     manageDestinations: 'Manage Destinations & Routes',
     manageTemplates: 'Manage Templates',
-    messageHistory: 'Message History',
-    statistics: 'Statistics'
+    messageHistory: 'Message History'
   },
 
   // Flight Form
@@ -17,8 +39,8 @@ export const en = {
     newTime: 'New Time',
     originalDate: 'Original Date',
     newDate: 'New Date',
-    departureCity: 'Departure City',
-    arrivalCity: 'Arrival City',
+    departureCity: 'Departure',
+    arrivalCity: 'Arrival',
     loungeOpenTime: 'Lounge Opening Time',
     counterOpenTime: 'Counter Opening Time',
     clearFields: 'Clear Fields',
@@ -38,7 +60,27 @@ export const en = {
     },
     keyboardShortcuts: 'Keyboard shortcuts: Ctrl+Enter to send • Ctrl+K to clear',
     newDateOptional: 'New Date (Optional)',
-    selectArrivalCity: 'Select Arrival City'
+    selectArrivalCity: 'Select Arrival City',
+    selectDepartureCity: 'Select Departure City',
+    selectTemplate: 'Select Template',
+    selectTemplateMessage: 'Select Message Template',
+    noTemplatesFound: 'No templates found',
+    hebrewMessage: 'Hebrew Message',
+    englishMessage: 'English Message',
+    copy: 'Copy',
+    flightNumberRequired: 'Flight number is required',
+    departureCityRequired: 'Departure city is required',
+    arrivalCityRequired: 'Arrival city is required',
+    originalDateRequired: 'Original date is required',
+    originalTimeRequired: 'Original time is required',
+    newTimeRequired: 'New time is required',
+    clearFieldsConfirm: 'Are you sure you want to clear the fields?',
+    clearAllFieldsConfirm: 'Are you sure you want to clear all fields?',
+    flightNumberPlaceholder: 'e.g.: 123',
+    internetCodePlaceholder: 'Enter internet code',
+    newFlightNumberPlaceholder: 'e.g.: 456 (optional)',
+    addNewRoute: 'Add New Route',
+    dataUpdater: 'Data Updater'
   },
 
   // Template Manager
@@ -51,15 +93,21 @@ export const en = {
     activeTemplate: 'Active Template',
     cancel: 'Cancel',
     save: 'Save',
-    edit: 'Edit Template',
-    delete: 'Delete Template',
+    edit: 'Edit',
+    delete: 'Delete',
     setActive: 'Set as Active Template',
     availableParameters: 'Available Parameters',
-    dragParameters: 'Drag and drop each parameter to the template:',
+    dragParameters: 'Click or drag parameters to the template:',
     hebrewContentLabel: 'Hebrew Content:',
     englishContentLabel: 'English Content:',
     active: 'Active',
     inactive: 'Inactive',
+    searchTemplates: 'Search templates...',
+    noTemplatesFound: 'No templates found matching search',
+    noTemplatesAvailable: 'No templates available',
+    created: 'Created',
+    createdBy: 'By',
+    unknownUser: 'Unknown user',
     deleteConfirm: 'Are you sure you want to delete this template?',
     fillAllFields: 'Please fill in all required fields (name, Hebrew content, and English content)',
     parameters: {
@@ -72,7 +120,9 @@ export const en = {
       originalTime: 'Original Time',
       newTime: 'New Time',
       loungeOpenTime: 'Lounge Opening Time',
-      counterOpenTime: 'Counter Opening Time'
+      counterOpenTime: 'Counter Opening Time',
+      counterCloseTime: 'Counter Closing Time',
+      internetCode: 'Internet Code'
     }
   },
 
@@ -80,8 +130,8 @@ export const en = {
   destinationsTable: {
     title: 'Manage Destinations & Flight Routes',
     flightNumber: 'Flight Number',
-    departureCity: 'Departure City',
-    arrivalCity: 'Arrival City',
+    departureCity: 'Departure',
+    arrivalCity: 'Arrival',
     actions: 'Actions',
     edit: 'Edit',
     save: 'Save',
@@ -92,7 +142,35 @@ export const en = {
     selectArrivalCity: 'Select Arrival City',
     deleteConfirm: 'Are you sure you want to delete this route?',
     flightNumberRequired: 'Flight number is required',
-    citiesRequired: 'Please select both departure and arrival cities'
+    citiesRequired: 'Please select both departure and arrival cities',
+    subtitle: 'Flight routes and destinations management',
+    searchPlaceholder: 'Search flight routes...',
+    howItWorks: 'How it works',
+    howItWorksDescription: 'This table contains all flight routes for EL AL and Sundor. Each route shows departure and arrival cities with Hebrew and English names. Enter a flight number in the form and cities will be filled automatically.',
+    addingRoutes: 'Adding routes:',
+    step1: 'Click "Add New Route" to add a new flight route',
+    step2: 'Fill in all required fields: flight number, departure city, arrival city and airline',
+    step3: 'Click "Save" to save the new route',
+    airline: 'Airline',
+    foundRoutes: 'Found {count} flight routes for "{searchTerm}"',
+    loadingRoutes: 'Loading flight routes...',
+    errorLoadingRoutes: 'Error loading flight routes',
+    flightNumber: 'Flight Number',
+    airline: 'Airline',
+    departureCityCode: 'Departure City (Code)',
+    arrivalCityCode: 'Arrival City (Code)',
+    departureCityHebrew: 'Departure City (Hebrew)',
+    departureCityEnglish: 'Departure City (English)',
+    arrivalCityHebrew: 'Arrival City (Hebrew)',
+    arrivalCityEnglish: 'Arrival City (English)',
+    enterFlightNumber: 'Enter flight number (1-4 digits)',
+    telAviv: 'Tel Aviv',
+    newYork: 'New York',
+    addRoute: 'Add Route',
+    saveChanges: 'Save Changes',
+    editRoute: 'Edit Flight Route',
+    addRouteDescription: 'Add a new flight route to the system',
+    editRouteDescription: 'Edit flight route details'
   },
 
   // Message History
@@ -125,7 +203,18 @@ export const en = {
     mostUsedTemplate: 'Most Used Template',
     messagesByDay: 'Messages by Day',
     messagesByTemplate: 'Messages by Template',
-    noData: 'No data to display'
+    noData: 'No data to display',
+    systemOverview: 'System activity overview',
+    flightRoutes: 'Flight Routes',
+    updatedFlights: 'Updated Flights (Last Week)',
+    citiesInSystem: 'Cities in System',
+    userActivities: 'User Activities',
+    userActivityHistory: 'User Activity History',
+    popularRoutes: 'Popular Routes',
+    performanceSummary: 'Performance Summary',
+    sentMessagesPercentage: 'Sent Messages Percentage',
+    averageMessagesPerDay: 'Average Messages per Day',
+    templatesInUse: 'Templates in Use'
   },
 
   // Common

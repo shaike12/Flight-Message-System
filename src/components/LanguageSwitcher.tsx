@@ -11,27 +11,27 @@ const LanguageSwitcher: React.FC = () => {
 
   return (
     <div className="flex items-center space-x-2 rtl:space-x-reverse">
-      <Globe className="h-5 w-5 text-gray-600" />
-      <div className="flex bg-gray-100 rounded-lg p-1">
+      <Globe className="h-4 w-4 text-gray-500" style={{ marginLeft: '16px' }} />
+      <div className="flex bg-gray-100 rounded-md p-0.5">
         <button
           onClick={() => handleLanguageChange('he')}
-          className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+          className={`px-2 py-1 text-xs font-medium rounded transition-all duration-200 ${
             language === 'he'
               ? 'bg-blue-600 text-white shadow-sm'
               : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
           }`}
         >
-          עברית
+          עב
         </button>
         <button
           onClick={() => handleLanguageChange('en')}
-          className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+          className={`px-2 py-1 text-xs font-medium rounded transition-all duration-200 ${
             language === 'en'
               ? 'bg-blue-600 text-white shadow-sm'
               : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
           }`}
         >
-          English
+          EN
         </button>
       </div>
     </div>

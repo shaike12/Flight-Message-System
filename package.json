@@ -2,7 +2,6 @@
   "name": "flight-message-system",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://yourusername.github.io/flight-message-system",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
@@ -13,10 +12,12 @@
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "@types/bcryptjs": "^2.4.6",
     "@types/jest": "^27.5.2",
     "@types/node": "^16.18.126",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
+    "bcryptjs": "^3.0.2",
     "firebase": "^12.2.1",
     "firebase-admin": "^13.5.0",
     "html2canvas": "^1.4.1",
@@ -35,8 +36,9 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "env:check": "node -e \"const required = ['REACT_APP_FIREBASE_API_KEY', 'REACT_APP_FIREBASE_AUTH_DOMAIN', 'REACT_APP_FIREBASE_PROJECT_ID', 'REACT_APP_FIREBASE_STORAGE_BUCKET', 'REACT_APP_FIREBASE_MESSAGING_SENDER_ID', 'REACT_APP_FIREBASE_APP_ID']; const missing = required.filter(key => !process.env[key]); if (missing.length > 0) { console.error('❌ Missing environment variables:', missing.join(', ')); process.exit(1); } else { console.log('✅ All required environment variables are set'); }\"",
+    "env:example": "cp .env.example .env.local && echo '✅ Created .env.local from .env.example'",
+    "setup": "npm install && npm run env:example && echo '✅ Setup complete! Please edit .env.local with your Firebase configuration.'"
   },
   "eslintConfig": {
     "extends": [
@@ -55,8 +57,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "gh-pages": "^6.1.1"
   }
 }

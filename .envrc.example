@@ -1,0 +1,19 @@
+# Environment variables for direnv
+# Copy this file to .envrc and fill in your values
+
+# Firebase Configuration
+export REACT_APP_FIREBASE_API_KEY="your_firebase_api_key_here"
+export REACT_APP_FIREBASE_AUTH_DOMAIN="your_project_id.firebaseapp.com"
+export REACT_APP_FIREBASE_PROJECT_ID="your_project_id"
+export REACT_APP_FIREBASE_STORAGE_BUCKET="your_project_id.firebasestorage.app"
+export REACT_APP_FIREBASE_MESSAGING_SENDER_ID="your_messaging_sender_id"
+export REACT_APP_FIREBASE_APP_ID="your_app_id"
+
+# Application Configuration
+export REACT_APP_APP_NAME="FlightMessageSystem"
+export REACT_APP_APP_VERSION="1.0.0"
+export REACT_APP_ENVIRONMENT="development"
+
+# Security Settings
+export REACT_APP_ENABLE_ANALYTICS="false"
+export REACT_APP_ENABLE_CRASH_REPORTING="false"

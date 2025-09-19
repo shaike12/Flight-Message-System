@@ -20,6 +20,8 @@ export const generateMessage = createAsyncThunk(
     flightId: string;
     templateId: string;
     recipients: string[];
+    departureCity: string;
+    arrivalCity: string;
   }) => {
     // In a real app, this would be an API call
     const newMessage: GeneratedMessage = {
@@ -30,6 +32,8 @@ export const generateMessage = createAsyncThunk(
       recipients: params.recipients,
       status: 'draft',
       createdAt: new Date().toISOString(),
+      departureCity: params.departureCity,
+      arrivalCity: params.arrivalCity,
     };
     return newMessage;
   }
@@ -67,6 +71,7 @@ const messagesSlice = createSlice({
         const message = state.messages.find(msg => msg.id === action.payload);
         if (message) {
           message.status = 'sent';
+          message.sentAt = new Date().toISOString();
         }
       })
       .addCase(sendMessage.rejected, (state, action) => {

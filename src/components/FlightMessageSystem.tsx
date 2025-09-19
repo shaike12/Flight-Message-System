@@ -1,114 +1,302 @@
-import React, { useState, useEffect } from 'react';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { fetchFlights, fetchTemplates, fetchCities, fetchFlightRoutes } from '../store/slices';
-import FlightForm from './FlightForm';
-import TemplateManager from './TemplateManager';
-import FlightList from './FlightList';
-import CombinedDestinationsTable from './CombinedDestinationsTable';
-import MessageHistory from './MessageHistory';
+import React, { useState, useMemo } from 'react';
+import { useAppSelector } from '../store/hooks';
 import Statistics from './Statistics';
+import TemplateManager from './TemplateManager';
+import CombinedDestinationsTable from './CombinedDestinationsTable';
+import FlightForm from './FlightForm';
 import LanguageSwitcher from './LanguageSwitcher';
+import DataUpdater from './DataUpdater';
+import VariableManager from './VariableManager';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Plane, FileText, MessageSquare, List, MapPin, History, BarChart3 } from 'lucide-react';
-
-type TabType = 'flights' | 'templates' | 'list' | 'destinations' | 'history' | 'statistics';
+import { useAuth } from '../contexts/AuthContext';
+import { 
+  Box, 
+  Tabs, 
+  Tab, 
+  Paper, 
+  Container,
+  Chip,
+  Typography,
+  useTheme,
+  useMediaQuery
+} from '@mui/material';
+import { 
+  Plane, 
+  MapPin, 
+  FileText, 
+  BarChart3, 
+  Database, 
+  Settings,
+  Users
+} from 'lucide-react';
 
 const FlightMessageSystem: React.FC = () => {
-  const dispatch = useAppDispatch();
-  const [activeTab, setActiveTab] = useState<TabType>('flights');
-  const { t, isRTL } = useLanguage();
-  
-  const { flights } = useAppSelector((state) => state.flights);
-  const { templates } = useAppSelector((state) => state.templates);
-  const { cities } = useAppSelector((state) => state.cities);
-  const { routes: flightRoutes } = useAppSelector((state) => state.flightRoutes);
+  const { templates, cities, flightRoutes } = useAppSelector((state) => ({
+    templates: state.templates.templates,
+    cities: state.cities.cities,
+    flightRoutes: state.flightRoutes.routes,
+  }));
 
-  useEffect(() => {
-    dispatch(fetchFlights());
-    dispatch(fetchTemplates());
-    dispatch(fetchCities());
-    dispatch(fetchFlightRoutes());
-  }, [dispatch]);
+  // Memoize the data to prevent unnecessary re-renders
+  const memoizedData = useMemo(() => ({
+    templates: templates || [],
+    cities: cities || [],
+    flightRoutes: flightRoutes || [],
+  }), [templates, cities, flightRoutes]);
+
+  const { t } = useLanguage();
+  const { userData } = useAuth();
+  const [activeTab, setActiveTab] = useState('flights');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Listen for navigation events from other components
+  React.useEffect(() => {
+    const handleNavigateToTab = (event: CustomEvent) => {
+      if (typeof event.detail === 'string') {
+        setActiveTab(event.detail);
+      } else if (event.detail && event.detail.tab) {
+        setActiveTab(event.detail.tab);
+        // Store route data for the destinations component
+        if (event.detail.routeData) {
+          localStorage.setItem('pendingRouteData', JSON.stringify(event.detail.routeData));
+        }
+      } else if (event.detail && event.detail.tabId) {
+        setActiveTab(event.detail.tabId);
+      }
+    };
+
+    window.addEventListener('navigateToTab', handleNavigateToTab as EventListener);
+    return () => window.removeEventListener('navigateToTab', handleNavigateToTab as EventListener);
+  }, []);
 
   const tabs = [
-    { id: 'flights' as TabType, name: t.navigation.createMessage, icon: MessageSquare },
-    { id: 'templates' as TabType, name: t.navigation.manageTemplates, icon: FileText },
-    { id: 'list' as TabType, name: 'דחיות של טיסות', icon: List },
-    { id: 'destinations' as TabType, name: t.navigation.manageDestinations, icon: MapPin },
-    { id: 'history' as TabType, name: t.navigation.messageHistory, icon: History },
-    { id: 'statistics' as TabType, name: t.navigation.statistics, icon: BarChart3 },
+    { 
+      id: 'flights', 
+      label: t.navigation.flights, 
+      icon: Plane,
+      description: 'יצירת הודעות טיסה'
+    },
+    { 
+      id: 'destinations', 
+      label: t.navigation.destinations, 
+      icon: MapPin,
+      description: 'ניהול יעדים'
+    },
+    { 
+      id: 'templates', 
+      label: t.navigation.templates, 
+      icon: FileText,
+      description: 'ניהול תבניות'
+    },
+    { 
+      id: 'statistics', 
+      label: t.navigation.statistics, 
+      icon: BarChart3,
+      description: 'סטטיסטיקות'
+    },
+    ...(userData?.role === 'admin' ? [
+      { 
+        id: 'data-updater', 
+        label: t.flightForm.dataUpdater, 
+        icon: Database,
+        description: 'עדכון נתונים',
+        adminOnly: true
+      },
+      { 
+        id: 'variables', 
+        label: t.navigation.variables, 
+        icon: Settings,
+        description: 'ניהול משתנים',
+        adminOnly: true
+      }
+    ] : []),
   ];
 
-  const renderTabContent = () => {
+  const renderContent = () => {
     switch (activeTab) {
       case 'flights':
-        return <FlightForm cities={cities} flightRoutes={flightRoutes} templates={templates} />;
-      case 'templates':
-        return <TemplateManager templates={templates} />;
-      case 'list':
-        return <FlightList flights={flights} />;
+        return (
+          <div className="space-y-6">
+            <FlightForm cities={memoizedData.cities} flightRoutes={memoizedData.flightRoutes} templates={memoizedData.templates} />
+          </div>
+        );
       case 'destinations':
-        return <CombinedDestinationsTable cities={cities} />;
-      case 'history':
-        return <MessageHistory />;
+        return <CombinedDestinationsTable cities={memoizedData.cities} />;
+      case 'templates':
+        return <TemplateManager />;
       case 'statistics':
         return <Statistics />;
+      case 'data-updater':
+        if (userData?.role !== 'admin') {
+          return (
+            <div className="text-center py-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">אין לך הרשאה לגשת לעמוד זה</h2>
+              <p className="text-gray-600">עמוד זה זמין רק למשתמשים מסוג אדמין</p>
+            </div>
+          );
+        }
+        return <DataUpdater />;
+      case 'variables':
+        if (userData?.role !== 'admin') {
+          return (
+            <div className="text-center py-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">אין לך הרשאה לגשת לעמוד זה</h2>
+              <p className="text-gray-600">עמוד זה זמין רק למשתמשים מסוג אדמין</p>
+            </div>
+          );
+        }
+        return <VariableManager />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
-              <Plane className="h-8 w-8 text-blue-600" />
-              <h1 className={`${isRTL ? 'ml-3' : 'mr-3'} text-2xl font-bold text-gray-900`}>
-                {isRTL ? 'מערכת הודעות דחיית טיסות - אל על' : 'EL AL Flight Delay Message System'}
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4 rtl:space-x-reverse">
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      {/* Navigation Section */}
+      <Box sx={{ mb: 4 }}>
+        <Paper
+          elevation={0}
+          sx={{
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(0, 0, 0, 0.08)',
+            borderRadius: 3,
+            overflow: 'hidden'
+          }}
+        >
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            p: 2,
+            flexWrap: 'wrap',
+            gap: 2
+          }}>
+            {/* Navigation Tabs */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              flex: 1,
+              minWidth: 0
+            }}>
+              <Tabs
+                value={activeTab}
+                onChange={(_, newValue) => setActiveTab(newValue)}
+                variant={isMobile ? "scrollable" : "standard"}
+                scrollButtons={isMobile ? "auto" : false}
+                sx={{
+                  '& .MuiTabs-indicator': {
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    height: 3,
+                    borderRadius: '3px 3px 0 0'
+                  },
+                  '& .MuiTab-root': {
+                    textTransform: 'none',
+                    fontWeight: '600',
+                    fontSize: '0.9rem',
+                    minHeight: 48,
+                    px: 2,
+                    '&.Mui-selected': {
+                      color: '#667eea'
+                    }
+                  }
+                }}
+              >
+                {tabs.map((tab) => {
+                  const IconComponent = tab.icon;
+                  return (
+                    <Tab
+                      key={tab.id}
+                      value={tab.id}
+                      label={
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 1,
+                          flexDirection: isMobile ? 'column' : 'row'
+                        }}>
+                          <IconComponent size={isMobile ? 20 : 18} />
+                          <Box sx={{ 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            alignItems: isMobile ? 'center' : 'flex-start',
+                            gap: 0.25
+                          }}>
+                            <Typography variant="body2" sx={{ fontWeight: 'inherit' }}>
+                              {tab.label}
+                            </Typography>
+                            {!isMobile && (
+                              <Typography variant="caption" sx={{ 
+                                opacity: 0.7, 
+                                fontSize: '0.7rem',
+                                lineHeight: 1
+                              }}>
+                                {tab.description}
+                              </Typography>
+                            )}
+                          </Box>
+                          {tab.adminOnly && (
+                            <Chip
+                              label="Admin"
+                              size="small"
+                              sx={{
+                                height: 16,
+                                fontSize: '0.6rem',
+                                backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                                color: '#1976d2',
+                                '& .MuiChip-label': {
+                                  px: 0.5
+                                }
+                              }}
+                            />
+                          )}
+                        </Box>
+                      }
+                    />
+                  );
+                })}
+              </Tabs>
+            </Box>
+            
+            {/* Language Switcher */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              flex: '0 0 auto'
+            }}>
               <LanguageSwitcher />
-            </div>
-          </div>
-        </div>
-      </header>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
 
-      {/* Navigation Tabs */}
-      <nav className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <Icon className="h-5 w-5 mr-2" />
-                  {tab.name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {renderTabContent()}
-        </div>
-      </main>
-    </div>
+      {/* Content */}
+      <Paper
+        elevation={0}
+        sx={{
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(0, 0, 0, 0.08)',
+          borderRadius: 3,
+          overflow: 'hidden',
+          minHeight: '60vh',
+          maxHeight: '80vh',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <Box sx={{ 
+          p: 3, 
+          flex: 1, 
+          overflow: 'auto',
+          position: 'relative'
+        }}>
+          {renderContent()}
+        </Box>
+      </Paper>
+    </Container>
   );
 };
 

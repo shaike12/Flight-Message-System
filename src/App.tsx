@@ -4,17 +4,28 @@ import { store } from './store';
 import FlightMessageSystem from './components/FlightMessageSystem';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { CustomThemeProvider } from './contexts/ThemeContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Header from './components/Header';
 
 function App() {
   return (
     <Provider store={store}>
-      <LanguageProvider>
-        <ErrorBoundary>
-          <div className="min-h-screen bg-gray-50">
-            <FlightMessageSystem />
-          </div>
-        </ErrorBoundary>
-      </LanguageProvider>
+      <CustomThemeProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <ErrorBoundary>
+              <ProtectedRoute>
+                <div className="min-h-screen">
+                  <Header />
+                  <FlightMessageSystem />
+                </div>
+              </ProtectedRoute>
+            </ErrorBoundary>
+          </AuthProvider>
+        </LanguageProvider>
+      </CustomThemeProvider>
     </Provider>
   );
 }

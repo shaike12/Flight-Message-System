@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { City } from '../../types';
+import { fetchCities as fetchCitiesFromFirebase, addCity as addCityToFirebase, updateCity as updateCityInFirebase, deleteCity as deleteCityFromFirebase } from '../../firebase/services';
 
 interface CitiesState {
   cities: City[];
@@ -74,8 +75,59 @@ const elAlCities: City[] = [
 export const fetchCities = createAsyncThunk(
   'cities/fetchCities',
   async () => {
-    // In a real app, this would be an API call
-    return elAlCities;
+    try {
+      const cities = await fetchCitiesFromFirebase();
+      // If no cities in Firebase, return default cities
+      if (cities.length === 0) {
+        return elAlCities;
+      }
+      return cities;
+    } catch (error) {
+      console.error('Error fetching cities from Firebase, using defaults:', error);
+      return elAlCities;
+    }
+  }
+);
+
+// Async thunk for adding a city
+export const addCityAsync = createAsyncThunk(
+  'cities/addCityAsync',
+  async (city: Omit<City, 'id'>) => {
+    try {
+      const id = await addCityToFirebase(city);
+      return { id, ...city };
+    } catch (error) {
+      console.error('Error adding city to Firebase:', error);
+      throw error;
+    }
+  }
+);
+
+// Async thunk for updating a city
+export const updateCityAsync = createAsyncThunk(
+  'cities/updateCityAsync',
+  async ({ id, city }: { id: string; city: Partial<City> }) => {
+    try {
+      await updateCityInFirebase(id, city);
+      return { id, ...city };
+    } catch (error) {
+      console.error('Error updating city in Firebase:', error);
+      throw error;
+    }
+  }
+);
+
+// Async thunk for deleting a city
+export const deleteCityAsync = createAsyncThunk(
+  'cities/deleteCityAsync',
+  async (id: string) => {
+    try {
+      await deleteCityFromFirebase(id);
+      return id;
+    } catch (error) {
+      console.error('Error deleting city from Firebase:', error);
+      throw error;
+    }
   }
 );
 
@@ -109,6 +161,18 @@ const citiesSlice = createSlice({
       .addCase(fetchCities.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch cities';
+      })
+      .addCase(addCityAsync.fulfilled, (state, action) => {
+        state.cities.push(action.payload);
+      })
+      .addCase(updateCityAsync.fulfilled, (state, action) => {
+        const index = state.cities.findIndex(city => (city as any).id === action.payload.id);
+        if (index !== -1) {
+          state.cities[index] = { ...state.cities[index], ...action.payload };
+        }
+      })
+      .addCase(deleteCityAsync.fulfilled, (state, action) => {
+        state.cities = state.cities.filter(city => (city as any).id !== action.payload);
       });
   },
 });
