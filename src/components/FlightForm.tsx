@@ -6,7 +6,7 @@ import { fetchTemplates } from '../store/slices/templatesSlice';
 import { fetchFlightRoutes } from '../store/slices/flightRoutesSlice';
 import { City, FlightRoute, MessageTemplate } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getLocalTime, getLocalTimeWithDate } from '../services/timezoneService';
+import { getLocalTime, getLocalTimeWithDate, getCityUTCOffset } from '../services/timezoneService';
 import { Plane, Calendar, Clock, MapPin, Copy, Trash2, AlertTriangle, CheckCircle, RefreshCw, FileText } from 'lucide-react';
 import { 
   Button, 
@@ -98,6 +98,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   const [departureLocalDate, setDepartureLocalDate] = useState<string>('');
   const [arrivalLocalTime, setArrivalLocalTime] = useState<string>('');
   const [arrivalLocalDate, setArrivalLocalDate] = useState<string>('');
+  const [departureUTCOffset, setDepartureUTCOffset] = useState<string>('');
 
   // Function to check which parameters are used in the selected template
   const getTemplateParameters = useCallback((templateContent: string): Set<string> => {
@@ -205,7 +206,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
           ]);
           setDepartureLocalTime(time);
           setDepartureLocalDate(date);
-        } catch (error) {
+      } catch (error) {
           console.error('Error updating departure local time:', error);
           setDepartureLocalTime('שגיאה');
           setDepartureLocalDate('שגיאה');
@@ -237,6 +238,24 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     updateLocalTimes();
   }, [formData.departureCity, formData.arrivalCity, currentTimeState]);
 
+  // Update UTC offset when departure city changes
+  useEffect(() => {
+    const updateUTCOffset = async () => {
+      if (formData.departureCity) {
+        try {
+          const utcOffset = await getCityUTCOffset(formData.departureCity);
+          setDepartureUTCOffset(utcOffset);
+        } catch (error) {
+          console.error('Error updating UTC offset:', error);
+          setDepartureUTCOffset('');
+        }
+      } else {
+        setDepartureUTCOffset('');
+      }
+    };
+
+    updateUTCOffset();
+  }, [formData.departureCity]);
 
   // Auto-save form data to localStorage with debouncing
   useEffect(() => {
@@ -901,6 +920,14 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       },
                     }}
                   />
+                  {departureUTCOffset && formData.departureCity && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
+                      🌍 {departureUTCOffset} - UTC של {language === 'he' 
+                        ? (memoizedCities.find(c => c.code === formData.departureCity)?.name || formData.departureCity)
+                        : (memoizedCities.find(c => c.code === formData.departureCity)?.englishName || formData.departureCity)
+                      }
+                    </Typography>
+                  )}
                 </Box>
 
                 {/* New Time */}
@@ -927,6 +954,14 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       },
                     }}
                   />
+                  {departureUTCOffset && formData.departureCity && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
+                      🌍 {departureUTCOffset} - UTC של {language === 'he' 
+                        ? (memoizedCities.find(c => c.code === formData.departureCity)?.name || formData.departureCity)
+                        : (memoizedCities.find(c => c.code === formData.departureCity)?.englishName || formData.departureCity)
+                      }
+                    </Typography>
+                  )}
                 </Box>
 
                 {/* Check-in Counter Opening Time - always reserve space */}

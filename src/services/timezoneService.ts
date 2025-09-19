@@ -286,3 +286,28 @@ export const getTimezoneName = (airportCode: string): string => {
   const parts = timezone.split('/');
   return parts[parts.length - 1].replace('_', ' ');
 };
+
+// Function to get UTC offset for a city
+export const getCityUTCOffset = async (cityName: string): Promise<string> => {
+  try {
+    const timezone = await getTimezone(cityName);
+    if (!timezone) {
+      return 'UTC+0';
+    }
+    
+    const now = moment();
+    const offset = now.tz(timezone).utcOffset();
+    const hours = Math.floor(Math.abs(offset) / 60);
+    const minutes = Math.abs(offset) % 60;
+    const sign = offset >= 0 ? '+' : '-';
+    
+    if (minutes === 0) {
+      return `UTC${sign}${hours}`;
+    } else {
+      return `UTC${sign}${hours}:${minutes.toString().padStart(2, '0')}`;
+    }
+  } catch (error) {
+    console.error('Error getting UTC offset:', error);
+    return 'UTC+0';
+  }
+};
