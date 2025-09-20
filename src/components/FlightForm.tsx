@@ -6,7 +6,7 @@ import { fetchTemplates } from '../store/slices/templatesSlice';
 import { fetchFlightRoutes } from '../store/slices/flightRoutesSlice';
 import { City, FlightRoute, MessageTemplate } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getLocalTime, getLocalTimeWithDate, getCityUTCOffset } from '../services/timezoneService';
+import { getLocalTime, getLocalTimeWithDate, getCityUTCOffset, convertLocalTimeToUTC, convertUTCToLocalTime } from '../services/timezoneService';
 import { Plane, Calendar, Clock, MapPin, Copy, Trash2, AlertTriangle, CheckCircle, RefreshCw, FileText } from 'lucide-react';
 import { 
   Button, 
@@ -99,6 +99,10 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   const [arrivalLocalTime, setArrivalLocalTime] = useState<string>('');
   const [arrivalLocalDate, setArrivalLocalDate] = useState<string>('');
   const [departureUTCOffset, setDepartureUTCOffset] = useState<string>('');
+  const [originalTimeUTC, setOriginalTimeUTC] = useState<string>('');
+  const [newTimeUTC, setNewTimeUTC] = useState<string>('');
+  const [originalTimeLocal, setOriginalTimeLocal] = useState<string>('');
+  const [newTimeLocal, setNewTimeLocal] = useState<string>('');
 
   // Function to check which parameters are used in the selected template
   const getTemplateParameters = useCallback((templateContent: string): Set<string> => {
@@ -257,6 +261,52 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     updateUTCOffset();
   }, [formData.departureCity]);
 
+  // Update local times when departure city, original time, or new time change
+  useEffect(() => {
+    const updateLocalTimes = async () => {
+      if (formData.departureCity) {
+        // Update original time local (formData.originalTime is UTC)
+        if (formData.originalTime) {
+          try {
+            const localTime = await convertUTCToLocalTime(formData.originalTime, formData.departureCity);
+            setOriginalTimeLocal(localTime);
+            setOriginalTimeUTC(formData.originalTime);
+          } catch (error) {
+            console.error('Error updating original time local:', error);
+            setOriginalTimeLocal(formData.originalTime);
+            setOriginalTimeUTC(formData.originalTime);
+          }
+        } else {
+          setOriginalTimeLocal('');
+          setOriginalTimeUTC('');
+        }
+
+        // Update new time local (formData.newTime is UTC)
+        if (formData.newTime) {
+          try {
+            const localTime = await convertUTCToLocalTime(formData.newTime, formData.departureCity);
+            setNewTimeLocal(localTime);
+            setNewTimeUTC(formData.newTime);
+          } catch (error) {
+            console.error('Error updating new time local:', error);
+            setNewTimeLocal(formData.newTime);
+            setNewTimeUTC(formData.newTime);
+          }
+        } else {
+          setNewTimeLocal('');
+          setNewTimeUTC('');
+        }
+      } else {
+        setOriginalTimeLocal('');
+        setNewTimeLocal('');
+        setOriginalTimeUTC('');
+        setNewTimeUTC('');
+      }
+    };
+
+    updateLocalTimes();
+  }, [formData.departureCity, formData.originalTime, formData.newTime]);
+
   // Auto-save form data to localStorage with debouncing
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -330,8 +380,8 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       .replace('{departureCity}', formData.departureCity ? departureCityName : '***')
       .replace('{arrivalCity}', formData.arrivalCity ? arrivalCityName : '***')
       .replace('{originalDate}', formData.originalDate ? originalDateFormatted : '***')
-      .replace('{originalTime}', formData.originalTime ? formData.originalTime : '***')
-      .replace('{newTime}', formData.newTime ? formData.newTime : '***')
+      .replace('{originalTime}', originalTimeLocal ? originalTimeLocal : '***')
+      .replace('{newTime}', newTimeLocal ? newTimeLocal : '***')
       .replace('{newDate}', formData.newDate ? newDateFormatted : '***')
       .replace('{loungeOpenTime}', formData.loungeOpenTime || '***')
       .replace('{counterOpenTime}', formData.counterOpenTime || '***')
@@ -366,8 +416,8 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       .replace('{departureCity}', formData.departureCity ? departureCityNameEnglish : '***')
       .replace('{arrivalCity}', formData.arrivalCity ? arrivalCityNameEnglish : '***')
       .replace('{originalDate}', formData.originalDate ? originalDateFormattedEnglish : '***')
-      .replace('{originalTime}', formData.originalTime ? formatTimeTo12Hour(formData.originalTime) : '***')
-      .replace('{newTime}', formData.newTime ? formatTimeTo12Hour(formData.newTime) : '***')
+      .replace('{originalTime}', originalTimeLocal ? formatTimeTo12Hour(originalTimeLocal) : '***')
+      .replace('{newTime}', newTimeLocal ? formatTimeTo12Hour(newTimeLocal) : '***')
       .replace('{newDate}', formData.newDate ? newDateFormattedEnglish : '***')
       .replace('{loungeOpenTime}', formData.loungeOpenTime || '***')
       .replace('{counterOpenTime}', formData.counterOpenTime || '***')
@@ -385,7 +435,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     } finally {
       setIsGenerating(false);
     }
-  }, [formData, selectedTemplate, selectedTemplateData, memoizedCities, memoizedFlightRoutes]);
+  }, [formData, selectedTemplate, selectedTemplateData, memoizedCities, memoizedFlightRoutes, originalTimeLocal, newTimeLocal]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -898,9 +948,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
 
                 {/* Original Time */}
                 <Box>
+                  <Typography variant="caption" sx={{ 
+                    color: 'text.secondary', 
+                    fontSize: '0.75rem',
+                    mb: 1,
+                    display: 'block',
+                    fontWeight: 500
+                  }}>
+                    {t.flightForm.originalTimeHelper}
+                  </Typography>
                   <TextField
                     fullWidth
-                    label={t.flightForm.originalTime}
+                    label={language === 'he' ? 'שעה מקורית (UTC) - יציאה' : 'Original Time (UTC) - Departure'}
                     name="originalTime"
                     type="time"
                     value={formData.originalTime}
@@ -920,6 +979,11 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       },
                     }}
                   />
+                  {originalTimeLocal && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
+                      🕐 {originalTimeLocal} - {language === 'he' ? 'זמן מקומי (יציאה)' : 'Local Time (Departure)'}
+                    </Typography>
+                  )}
                   {departureUTCOffset && formData.departureCity && (
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
                       🌍 {departureUTCOffset} - UTC של {language === 'he' 
@@ -932,9 +996,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
 
                 {/* New Time */}
                 <Box>
+                  <Typography variant="caption" sx={{ 
+                    color: 'text.secondary', 
+                    fontSize: '0.75rem',
+                    mb: 1,
+                    display: 'block',
+                    fontWeight: 500
+                  }}>
+                    {t.flightForm.newTimeHelper}
+                  </Typography>
                   <TextField
                     fullWidth
-                    label={t.flightForm.newTime}
+                    label={language === 'he' ? 'שעה חדשה (UTC) - יציאה' : 'New Time (UTC) - Departure'}
                     name="newTime"
                     type="time"
                     value={formData.newTime}
@@ -954,9 +1027,14 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       },
                     }}
                   />
+                  {newTimeLocal && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
+                      🕐 {newTimeLocal} - {language === 'he' ? 'זמן מקומי (יציאה)' : 'Local Time (Departure)'}
+                    </Typography>
+                  )}
                   {departureUTCOffset && formData.departureCity && (
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
-                      🌍 {departureUTCOffset} - UTC של {language === 'he' 
+                      🌍 {departureUTCOffset} -  של {language === 'he' 
                         ? (memoizedCities.find(c => c.code === formData.departureCity)?.name || formData.departureCity)
                         : (memoizedCities.find(c => c.code === formData.departureCity)?.englishName || formData.departureCity)
                       }
@@ -1251,9 +1329,12 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                     }}>
                       <Typography variant="subtitle2" sx={{ 
                         fontWeight: 'bold',
-                        color: 'text.primary'
+                        color: 'text.primary',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
                       }}>
-                        {t.flightForm.hebrewMessage}
+                        🇮🇱 {t.flightForm.hebrewMessage}
                       </Typography>
                       <Button
                         onClick={copyHebrewText}
@@ -1311,9 +1392,12 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       }}>
                         <Typography variant="subtitle2" sx={{ 
                           fontWeight: 'bold',
-                          color: 'text.primary'
+                          color: 'text.primary',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1
                         }}>
-                          {t.flightForm.englishMessage}
+                          🇺🇸 {t.flightForm.englishMessage}
                         </Typography>
                         <Button
                           onClick={copyEnglishText}

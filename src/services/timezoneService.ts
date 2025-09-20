@@ -311,3 +311,47 @@ export const getCityUTCOffset = async (cityName: string): Promise<string> => {
     return 'UTC+0';
   }
 };
+
+// Function to convert local time to UTC for a specific city
+export const convertLocalTimeToUTC = async (localTime: string, cityName: string): Promise<string> => {
+  try {
+    const timezone = await getTimezone(cityName);
+    if (!timezone) {
+      return localTime;
+    }
+    
+    // Create a moment object with the local time in the city's timezone
+    const localMoment = moment.tz(localTime, 'HH:mm', timezone);
+    
+    // Convert to UTC
+    const utcMoment = localMoment.utc();
+    
+    // Return in HH:mm format
+    return utcMoment.format('HH:mm');
+  } catch (error) {
+    console.error('Error converting local time to UTC:', error);
+    return localTime;
+  }
+};
+
+// Function to convert UTC time to local time for a specific city
+export const convertUTCToLocalTime = async (utcTime: string, cityName: string): Promise<string> => {
+  try {
+    const timezone = await getTimezone(cityName);
+    if (!timezone) {
+      return utcTime;
+    }
+    
+    // Create a moment object with the UTC time
+    const utcMoment = moment.utc(utcTime, 'HH:mm');
+    
+    // Convert to local time in the city's timezone
+    const localMoment = utcMoment.tz(timezone);
+    
+    // Return in HH:mm format
+    return localMoment.format('HH:mm');
+  } catch (error) {
+    console.error('Error converting UTC to local time:', error);
+    return utcTime;
+  }
+};

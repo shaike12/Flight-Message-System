@@ -63,6 +63,40 @@ const TemplateManager: React.FC = () => {
   // Check if form is valid
   const isFormValid = formData.name.trim() !== '' && formData.content.trim() !== '';
 
+  // Function to replace parameters with example values (Hebrew format)
+  const replaceParametersWithExamples = (content: string): string => {
+    return content
+      .replace(/\{flightNumber\}/g, 'LY221')
+      .replace(/\{newFlightNumber\}/g, 'LY222')
+      .replace(/\{departureCity\}/g, 'תל אביב')
+      .replace(/\{arrivalCity\}/g, 'פריז')
+      .replace(/\{originalDate\}/g, '25.12')
+      .replace(/\{newDate\}/g, '26.12')
+      .replace(/\{originalTime\}/g, '14:30')
+      .replace(/\{newTime\}/g, '15:30')
+      .replace(/\{loungeOpenTime\}/g, '12:00')
+      .replace(/\{counterOpenTime\}/g, '13:00')
+      .replace(/\{counterCloseTime\}/g, '14:00')
+      .replace(/\{internetCode\}/g, 'ABC123');
+  };
+
+  // Function to replace parameters with English example values
+  const replaceParametersWithEnglishExamples = (content: string): string => {
+    return content
+      .replace(/\{flightNumber\}/g, 'LY221')
+      .replace(/\{newFlightNumber\}/g, 'LY222')
+      .replace(/\{departureCity\}/g, 'Tel Aviv')
+      .replace(/\{arrivalCity\}/g, 'Paris')
+      .replace(/\{originalDate\}/g, 'December 25')
+      .replace(/\{newDate\}/g, 'December 26')
+      .replace(/\{originalTime\}/g, '2:30 PM')
+      .replace(/\{newTime\}/g, '3:30 PM')
+      .replace(/\{loungeOpenTime\}/g, '12:00 PM')
+      .replace(/\{counterOpenTime\}/g, '1:00 PM')
+      .replace(/\{counterCloseTime\}/g, '2:00 PM')
+      .replace(/\{internetCode\}/g, 'ABC123');
+  };
+
   // Check if form has changes
   const hasChanges = originalFormData ? (
     formData.name !== originalFormData.name ||
@@ -358,11 +392,11 @@ const TemplateManager: React.FC = () => {
               {/* Template content */}
               <div className="flex-1 w-full">
                 <div className="text-sm mb-3 whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--mui-palette-text-primary)' }}>
-                    {template.content}
+                    {replaceParametersWithExamples(template.content)}
                 </div>
                   {template.englishContent && (
                   <div className="text-sm mb-3 whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--mui-palette-text-secondary)' }}>
-                      {template.englishContent}
+                      {replaceParametersWithEnglishExamples(template.englishContent)}
                   </div>
                 )}
               </div>
