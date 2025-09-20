@@ -1018,7 +1018,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                 <Box>
                   <TextField
                     fullWidth
-                    label="עיר יציאה (קוד)"
+                    label="יציאה (קוד)"
                     value={routeEditForm.departureCity}
                     onChange={(e) => setRouteEditForm({...routeEditForm, departureCity: e.target.value.toUpperCase()})}
                     placeholder="TLV"
@@ -1039,6 +1039,14 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                           borderColor: '#667eea',
                         },
                       },
+                      '& .MuiInputBase-input': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      }
                     }}
                   />
                 </Box>
@@ -1047,7 +1055,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                 <Box>
                   <TextField
                     fullWidth
-                    label="עיר נחיתה (קוד)"
+                    label="נחיתה (קוד)"
                     value={routeEditForm.arrivalCity}
                     onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCity: e.target.value.toUpperCase()})}
                     placeholder="JFK"
@@ -1068,6 +1076,14 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                           borderColor: '#667eea',
                         },
                       },
+                      '& .MuiInputBase-input': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      }
                     }}
                   />
                 </Box>
@@ -1076,7 +1092,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                 <Box>
                   <TextField
                     fullWidth
-                    label="עיר יציאה (עברית)"
+                    label="יציאה (עברית)"
                     value={routeEditForm.departureCityHebrew}
                     onChange={(e) => setRouteEditForm({...routeEditForm, departureCityHebrew: e.target.value})}
                     placeholder="תל אביב"
@@ -1090,6 +1106,14 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                           borderColor: '#667eea',
                         },
                       },
+                      '& .MuiInputBase-input': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      }
                     }}
                   />
                 </Box>
@@ -1098,7 +1122,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                 <Box>
                   <TextField
                     fullWidth
-                    label="עיר יציאה (אנגלית)"
+                    label="Departure (English)"
                     value={routeEditForm.departureCityEnglish}
                     onChange={(e) => setRouteEditForm({...routeEditForm, departureCityEnglish: e.target.value})}
                     placeholder="Tel Aviv"
@@ -1112,6 +1136,14 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                           borderColor: '#667eea',
                         },
                       },
+                      '& .MuiInputBase-input': {
+                        textAlign: 'left',
+                        direction: 'ltr'
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      }
                     }}
                   />
                 </Box>
@@ -1120,7 +1152,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                 <Box>
                   <TextField
                     fullWidth
-                    label="עיר נחיתה (עברית)"
+                    label="נחיתה (עברית)"
                     value={routeEditForm.arrivalCityHebrew}
                     onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCityHebrew: e.target.value})}
                     placeholder="ניו יורק"
@@ -1134,6 +1166,14 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                           borderColor: '#667eea',
                         },
                       },
+                      '& .MuiInputBase-input': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      }
                     }}
                   />
                 </Box>
@@ -1142,7 +1182,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                 <Box>
                   <TextField
                     fullWidth
-                    label="עיר נחיתה (אנגלית)"
+                    label="Arrival (English)"
                     value={routeEditForm.arrivalCityEnglish}
                     onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCityEnglish: e.target.value})}
                     placeholder="New York"
@@ -1156,6 +1196,14 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                           borderColor: '#667eea',
                         },
                       },
+                      '& .MuiInputBase-input': {
+                        textAlign: 'left',
+                        direction: 'ltr'
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      }
                     }}
                   />
                 </Box>
@@ -1174,6 +1222,9 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                       borderColor: '#9ca3af',
                       backgroundColor: '#f9fafb',
                     },
+                    '& .MuiButton-startIcon': {
+                      marginLeft: '10px'
+                    }
                   }}
                 >
                   ביטול
@@ -1196,6 +1247,9 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                       transform: 'translateY(-2px)',
                     },
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '& .MuiButton-startIcon': {
+                      marginLeft: '10px'
+                    }
                   }}
                 >
                   {modalMode === 'add' ? 'הוסף מסלול' : 'שמור שינויים'}
