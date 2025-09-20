@@ -274,14 +274,16 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   useEffect(() => {
     const updateLocalTimes = async () => {
       if (formData.departureCity) {
-        // Update original time local (formData.originalTime is UTC)
+        // Update original time local (formData.originalTime is now local time)
         if (formData.originalTime) {
           try {
-            const localTime = await convertUTCToLocalTime(formData.originalTime, formData.departureCity);
-            setOriginalTimeLocal(localTime);
-            setOriginalTimeUTC(formData.originalTime);
+            // Since originalTime is now local time, we use it directly
+            setOriginalTimeLocal(formData.originalTime);
+            // Convert to UTC for display purposes
+            const utcTime = await convertLocalTimeToUTC(formData.originalTime, formData.departureCity);
+            setOriginalTimeUTC(utcTime);
           } catch (error) {
-            console.error('Error updating original time local:', error);
+            console.error('Error updating original time UTC:', error);
             setOriginalTimeLocal(formData.originalTime);
             setOriginalTimeUTC(formData.originalTime);
           }
@@ -389,7 +391,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       .replace('{departureCity}', formData.departureCity ? departureCityName : '***')
       .replace('{arrivalCity}', formData.arrivalCity ? arrivalCityName : '***')
       .replace('{originalDate}', formData.originalDate ? originalDateFormatted : '***')
-      .replace('{originalTime}', originalTimeLocal ? originalTimeLocal : '***')
+      .replace('{originalTime}', formData.originalTime ? formData.originalTime : '***')
       .replace('{newTime}', newTimeLocal ? newTimeLocal : '***')
       .replace('{newDate}', formData.newDate ? newDateFormatted : '***')
       .replace('{loungeOpenTime}', formData.loungeOpenTime || '***')
@@ -425,7 +427,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       .replace('{departureCity}', formData.departureCity ? departureCityNameEnglish : '***')
       .replace('{arrivalCity}', formData.arrivalCity ? arrivalCityNameEnglish : '***')
       .replace('{originalDate}', formData.originalDate ? originalDateFormattedEnglish : '***')
-      .replace('{originalTime}', originalTimeLocal ? formatTimeTo12Hour(originalTimeLocal) : '***')
+      .replace('{originalTime}', formData.originalTime ? formatTimeTo12Hour(formData.originalTime) : '***')
       .replace('{newTime}', newTimeLocal ? formatTimeTo12Hour(newTimeLocal) : '***')
       .replace('{newDate}', formData.newDate ? newDateFormattedEnglish : '***')
       .replace('{loungeOpenTime}', formData.loungeOpenTime || '***')
@@ -1249,7 +1251,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       },
                     }}
                   />
-                  {originalTimeLocal && (
+                  {originalTimeUTC && (
                     <Typography variant="caption" color="text.secondary" sx={{ 
                       mt: 0.5, 
                       display: 'block', 
@@ -1257,7 +1259,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       textAlign: language === 'he' ? 'right' : 'left',
                       direction: language === 'he' ? 'rtl' : 'ltr'
                     }}>
-                      🕐 {originalTimeLocal} - {t.flightForm.localTimeDeparture}
+                      🕐 {originalTimeUTC} UTC - {t.flightForm.utcTime}
                     </Typography>
                   )}
                   {departureUTCOffset && formData.departureCity && (
