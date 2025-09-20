@@ -6,8 +6,11 @@ import { fetchTemplates } from '../store/slices/templatesSlice';
 import { fetchFlightRoutes } from '../store/slices/flightRoutesSlice';
 import { City, FlightRoute, MessageTemplate } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
 import { getLocalTime, getLocalTimeWithDate, getCityUTCOffset, convertLocalTimeToUTC, convertUTCToLocalTime } from '../services/timezoneService';
-import { Plane, Calendar, Clock, MapPin, Copy, Trash2, AlertTriangle, CheckCircle, RefreshCw, FileText } from 'lucide-react';
+import { Plane, Calendar, Clock, MapPin, Copy, Trash2, AlertTriangle, CheckCircle, RefreshCw, FileText, Send } from 'lucide-react';
 import { 
   Button, 
   TextField, 
@@ -44,6 +47,7 @@ interface FlightFormProps {
 const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates }) => {
   const dispatch = useAppDispatch();
   const { t, language } = useLanguage();
+  const { userData } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -507,6 +511,74 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       }));
     }
     handleDatePickerClose();
+  };
+
+  // Handle sending message
+  const handleSendMessage = async () => {
+    if (!generatedText || !generatedEnglishText) {
+      setError('אנא צור הודעה לפני השליחה');
+      return;
+    }
+
+    if (!userData?.name) {
+      setError('שם המשתמש לא זמין');
+      return;
+    }
+
+    try {
+      // Create message object
+      const sentMessage = {
+        flightNumber: formData.flightNumber,
+        departureCity: formData.departureCity,
+        arrivalCity: formData.arrivalCity,
+        originalDate: formData.originalDate,
+        newDate: formData.newDate,
+        originalTime: formData.originalTime,
+        newTime: formData.newTime,
+        hebrewMessage: generatedText,
+        englishMessage: generatedEnglishText,
+        sentBy: userData.name,
+        sentAt: new Date().toISOString(),
+        templateId: selectedTemplate,
+        templateName: selectedTemplateData?.name || 'Unknown Template'
+      };
+
+      // Save to Firebase
+      const messagesRef = collection(db, 'sentMessages');
+      await addDoc(messagesRef, sentMessage);
+
+      // Also save to localStorage as backup
+      const existingMessages = JSON.parse(localStorage.getItem('sentMessages') || '[]');
+      existingMessages.unshift({ id: Date.now().toString(), ...sentMessage });
+      localStorage.setItem('sentMessages', JSON.stringify(existingMessages));
+
+      // Show success message
+      setError(null);
+      alert(t.flightForm.messageSent);
+
+      // Clear form after sending
+      setFormData({
+        flightNumber: '',
+        newFlightNumber: '',
+        originalTime: currentTime,
+        newTime: currentTime,
+        originalDate: currentDate,
+        newDate: currentDate,
+        departureCity: '',
+        arrivalCity: '',
+        loungeOpenTime: '',
+        counterOpenTime: '',
+        counterCloseTime: '',
+        internetCode: '',
+      });
+      setSelectedTemplate('');
+      setGeneratedText('');
+      setGeneratedEnglishText('');
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setError(t.flightForm.messageSentError);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -1449,6 +1521,40 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                   }}
                 >
                 {t.flightForm.clearFields}
+                </Button>
+                
+                {/* Send Message Button */}
+                <Button
+                  variant="contained"
+                  startIcon={<Send size={18} />}
+                  onClick={handleSendMessage}
+                  disabled={!generatedText || !generatedEnglishText || isGenerating}
+                  sx={{
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: 'white',
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1.5,
+                    fontWeight: 'bold',
+                    textTransform: 'none',
+                    fontSize: '0.9rem',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #0ea472 0%, #047857 100%)',
+                      boxShadow: '0 6px 16px rgba(16, 185, 129, 0.4)',
+                    },
+                    '&:disabled': {
+                      background: 'rgba(0, 0, 0, 0.12)',
+                      color: 'rgba(0, 0, 0, 0.26)',
+                      boxShadow: 'none'
+                    },
+                    '& .MuiButton-startIcon': { 
+                      marginRight: '8px',
+                      marginLeft: 0
+                    }
+                  }}
+                >
+                  {t.flightForm.sendMessage}
                 </Button>
               </Box>
             </CardContent>

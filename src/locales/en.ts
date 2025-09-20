@@ -27,7 +27,8 @@ export const en = {
     createMessage: 'Create Message',
     manageDestinations: 'Manage Destinations & Routes',
     manageTemplates: 'Manage Templates',
-    messageHistory: 'Message History'
+    messageHistory: 'Message History',
+    sentMessages: 'Sent Messages'
   },
 
   // Flight Form
@@ -90,6 +91,9 @@ export const en = {
       month: 'Month',
       day: 'Day'
     },
+    sendMessage: 'Send Message',
+    messageSent: 'Message sent successfully',
+    messageSentError: 'Error sending message',
     arrivalCityRequired: 'Arrival city is required',
     originalDateRequired: 'Original date is required',
     originalTimeRequired: 'Original time is required',
@@ -257,5 +261,38 @@ export const en = {
     refresh: 'Refresh',
     copy: 'Copy',
     required: 'is a required field'
+  },
+
+  // Sent Messages
+  sentMessages: {
+    title: 'Sent Messages',
+    subtitle: 'Record of all messages sent to customers',
+    noMessages: 'No messages sent yet',
+    table: {
+      flightNumber: 'Flight Number',
+      departureCity: 'Departure',
+      arrivalCity: 'Arrival',
+      originalDate: 'Original Date',
+      newDate: 'New Date',
+      originalTime: 'Original Time',
+      newTime: 'New Time',
+      hebrewMessage: 'Hebrew Message',
+      englishMessage: 'English Message',
+      sentBy: 'Sent By',
+      sentAt: 'Sent At',
+      actions: 'Actions',
+      view: 'View',
+      edit: 'Edit',
+      delete: 'Delete',
+      confirmDelete: 'Are you sure you want to delete this message?',
+      deleteSuccess: 'Message deleted successfully',
+      deleteError: 'Error deleting message',
+      exportToExcel: 'Export to Excel',
+      searchByFlightNumber: 'Search by flight number',
+      searchByDate: 'Search by date',
+      clearSearch: 'Clear search',
+      exportSuccess: 'File exported successfully',
+      exportError: 'Error exporting file'
+    }
   }
 };

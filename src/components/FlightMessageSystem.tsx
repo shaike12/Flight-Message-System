@@ -7,6 +7,7 @@ import FlightForm from './FlightForm';
 import LanguageSwitcher from './LanguageSwitcher';
 import DataUpdater from './DataUpdater';
 import VariableManager from './VariableManager';
+import SentMessages from './SentMessages';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -27,7 +28,8 @@ import {
   BarChart3, 
   Database, 
   Settings,
-  Users
+  Users,
+  MessageSquare
 } from 'lucide-react';
 
 const FlightMessageSystem: React.FC = () => {
@@ -100,6 +102,12 @@ const FlightMessageSystem: React.FC = () => {
       icon: BarChart3,
       description: 'סטטיסטיקות'
     },
+    { 
+      id: 'sent-messages', 
+      label: t.navigation.sentMessages, 
+      icon: MessageSquare,
+      description: 'הודעות שנשלחו'
+    },
     ...(userData?.role === 'admin' ? [
       { 
         id: 'data-updater', 
@@ -132,6 +140,8 @@ const FlightMessageSystem: React.FC = () => {
         return <TemplateManager />;
       case 'statistics':
         return <Statistics />;
+      case 'sent-messages':
+        return <SentMessages />;
       case 'data-updater':
         if (userData?.role !== 'admin') {
           return (

@@ -27,7 +27,8 @@ export const he = {
     createMessage: 'יצירת הודעה',
     manageDestinations: 'ניהול יעדים ומסלולים',
     manageTemplates: 'ניהול תבניות',
-    messageHistory: 'היסטוריית הודעות'
+    messageHistory: 'היסטוריית הודעות',
+    sentMessages: 'הודעות שנשלחו'
   },
 
   // Flight Form
@@ -90,6 +91,9 @@ export const he = {
       month: 'חודש',
       day: 'יום'
     },
+    sendMessage: 'שלח הודעה',
+    messageSent: 'הודעה נשלחה בהצלחה',
+    messageSentError: 'שגיאה בשליחת ההודעה',
     arrivalCityRequired: 'עיר הגעה נדרשת',
     originalDateRequired: 'תאריך מקורי נדרש',
     originalTimeRequired: 'שעה מקורית נדרשת',
@@ -257,5 +261,38 @@ export const he = {
     refresh: 'רענן',
     copy: 'העתק',
     required: 'הוא שדה חובה'
+  },
+
+  // Sent Messages
+  sentMessages: {
+    title: 'הודעות שנשלחו',
+    subtitle: 'תיעוד כל ההודעות שנשלחו ללקוחות',
+    noMessages: 'אין הודעות שנשלחו עדיין',
+    table: {
+      flightNumber: 'מספר טיסה',
+      departureCity: 'יציאה',
+      arrivalCity: 'נחיתה',
+      originalDate: 'תאריך מקורי',
+      newDate: 'תאריך חדש',
+      originalTime: 'שעה מקורית',
+      newTime: 'שעה חדשה',
+      hebrewMessage: 'הודעה עברית',
+      englishMessage: 'הודעה באנגלית',
+      sentBy: 'נשלח על ידי',
+      sentAt: 'נשלח בתאריך',
+      actions: 'פעולות',
+      view: 'צפייה',
+      edit: 'עריכה',
+      delete: 'מחיקה',
+      confirmDelete: 'האם אתה בטוח שברצונך למחוק הודעה זו?',
+      deleteSuccess: 'הודעה נמחקה בהצלחה',
+      deleteError: 'שגיאה במחיקת ההודעה',
+      exportToExcel: 'ייצא לאקסל',
+      searchByFlightNumber: 'חיפוש לפי מספר טיסה',
+      searchByDate: 'חיפוש לפי תאריך',
+      clearSearch: 'נקה חיפוש',
+      exportSuccess: 'הקובץ יוצא בהצלחה',
+      exportError: 'שגיאה בייצוא הקובץ'
+    }
   }
 };
