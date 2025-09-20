@@ -1225,7 +1225,6 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                     value={formData.originalTime}
                     onChange={handleInputChange}
                     error={!!errors.originalTime}
-                    helperText={errors.originalTime}
                     InputProps={{}}
                     sx={{
                       '& .MuiOutlinedInput-root': {
@@ -1251,31 +1250,6 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       },
                     }}
                   />
-                  {originalTimeUTC && (
-                    <Typography variant="caption" color="text.secondary" sx={{ 
-                      mt: 0.5, 
-                      display: 'block', 
-                      fontSize: '0.75rem',
-                      textAlign: language === 'he' ? 'right' : 'left',
-                      direction: language === 'he' ? 'rtl' : 'ltr'
-                    }}>
-                      🕐 {originalTimeUTC} UTC - {t.flightForm.utcTime}
-                    </Typography>
-                  )}
-                  {departureUTCOffset && formData.departureCity && (
-                    <Typography variant="caption" color="text.secondary" sx={{ 
-                      mt: 0.5, 
-                      display: 'block', 
-                      fontSize: '0.75rem',
-                      textAlign: language === 'he' ? 'right' : 'left',
-                      direction: language === 'he' ? 'rtl' : 'ltr'
-                    }}>
-                      🌍 {departureUTCOffset} - {t.flightForm.utcOf} {language === 'he' 
-                        ? (memoizedCities.find(c => c.code === formData.departureCity)?.name || formData.departureCity)
-                        : (memoizedCities.find(c => c.code === formData.departureCity)?.englishName || formData.departureCity)
-                      }
-                    </Typography>
-                  )}
                 </Box>
 
                 {/* New Time */}
