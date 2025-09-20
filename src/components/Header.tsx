@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { LogOut, User, Settings, ChevronDown, Moon, Sun } from 'lucide-react';
+import { LogOut, Settings, ChevronDown, Moon, Sun, Clock } from 'lucide-react';
 import { 
   AppBar, 
   Toolbar, 
@@ -20,10 +20,11 @@ import {
 } from '@mui/material';
 
 const Header: React.FC = () => {
-  const { userData, logout } = useAuth();
+  const { userData, logout, user } = useAuth();
   const { t } = useLanguage();
   const { isDarkMode, toggleTheme } = useTheme();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [sessionTimeLeft, setSessionTimeLeft] = useState<string>('');
   const open = Boolean(anchorEl);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -41,6 +42,45 @@ const Header: React.FC = () => {
     }
     handleClose();
   };
+
+  // Session time tracking
+  useEffect(() => {
+    if (!user) {
+      setSessionTimeLeft('');
+      return;
+    }
+
+    const loginTime = Date.now();
+    const eightHours = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
+
+    const updateSessionTime = () => {
+      const currentTime = Date.now();
+      const timeElapsed = currentTime - loginTime;
+      const timeLeft = eightHours - timeElapsed;
+
+      if (timeLeft <= 0) {
+        setSessionTimeLeft('');
+        return;
+      }
+
+      const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (hours > 0) {
+        setSessionTimeLeft(`${hours}:${minutes.toString().padStart(2, '0')}h`);
+      } else {
+        setSessionTimeLeft(`${minutes}m`);
+      }
+    };
+
+    // Update immediately
+    updateSessionTime();
+
+    // Update every minute
+    const interval = setInterval(updateSessionTime, 60000);
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   // Generate user initials for avatar
   const getUserInitials = (name: string | undefined) => {
@@ -221,6 +261,34 @@ const Header: React.FC = () => {
           >
             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
           </IconButton>
+
+          {/* Session Time Indicator */}
+          {sessionTimeLeft && (
+            <Box sx={{ 
+              display: { xs: 'none', sm: 'flex' },
+              alignItems: 'center', 
+              gap: 1,
+              px: 2,
+              py: 1,
+              borderRadius: 2,
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <Clock size={16} style={{ color: '#10b981' }} />
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: '#10b981',
+                  fontWeight: '600',
+                  fontSize: '0.75rem',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {sessionTimeLeft}
+              </Typography>
+            </Box>
+          )}
 
           {/* User Section */}
           {userData && (

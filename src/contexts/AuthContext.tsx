@@ -73,6 +73,65 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  // Auto-logout after 8 hours
+  useEffect(() => {
+    if (!user) return;
+
+    const loginTime = Date.now();
+    const eightHours = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
+    const warningTime = 7.5 * 60 * 60 * 1000; // 7.5 hours (30 minutes before logout)
+    let warningShown = false;
+
+    const checkSessionTimeout = () => {
+      const currentTime = Date.now();
+      const timeElapsed = currentTime - loginTime;
+      
+      // Show warning 30 minutes before logout
+      if (timeElapsed >= warningTime && !warningShown) {
+        warningShown = true;
+        const language = localStorage.getItem('language') || 'he';
+        const message = language === 'he' 
+          ? 'הפגישה שלך תפג בעוד 30 דקות. האם ברצונך להמשיך לעבוד?'
+          : 'Your session will expire in 30 minutes. Do you want to continue working?';
+        
+        if (window.confirm(message)) {
+          // User wants to continue, reset the timer
+          warningShown = false;
+          // Reset the warning flag to allow another warning in 7.5 hours
+          // The session will be extended by resetting the warning
+        }
+      }
+      
+      // Logout after 8 hours
+      if (timeElapsed >= eightHours) {
+        // Session expired, logout user
+        handleLogout();
+        const language = localStorage.getItem('language') || 'he';
+        const logoutMessage = language === 'he' 
+          ? 'הפגישה שלך פגה. אנא התחבר שוב.'
+          : 'Your session has expired. Please log in again.';
+        alert(logoutMessage);
+      }
+    };
+
+    // Check every minute
+    const interval = setInterval(checkSessionTimeout, 60000);
+
+    // Also check on page visibility change (when user comes back to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkSessionTimeout();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
+
   const handleSignIn = async (email: string, password: string) => {
     const result = await signIn(email, password);
     return result;
