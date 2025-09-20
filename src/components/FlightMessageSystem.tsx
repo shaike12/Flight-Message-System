@@ -8,6 +8,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import DataUpdater from './DataUpdater';
 import VariableManager from './VariableManager';
 import SentMessages from './SentMessages';
+import UserManagement from './UserManagement';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -29,7 +30,8 @@ import {
   Database, 
   Settings,
   Users,
-  MessageSquare
+  MessageSquare,
+  Shield
 } from 'lucide-react';
 
 const FlightMessageSystem: React.FC = () => {
@@ -122,6 +124,13 @@ const FlightMessageSystem: React.FC = () => {
         icon: Settings,
         description: 'ניהול משתנים',
         adminOnly: true
+      },
+      { 
+        id: 'user-management', 
+        label: t.navigation.userManagement, 
+        icon: Shield,
+        description: 'ניהול משתמשים',
+        adminOnly: true
       }
     ] : []),
   ];
@@ -162,6 +171,16 @@ const FlightMessageSystem: React.FC = () => {
           );
         }
         return <VariableManager />;
+      case 'user-management':
+        if (userData?.role !== 'admin') {
+          return (
+            <div className="text-center py-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">אין לך הרשאה לגשת לעמוד זה</h2>
+              <p className="text-gray-600">עמוד זה זמין רק למשתמשים מסוג אדמין</p>
+            </div>
+          );
+        }
+        return <UserManagement />;
       default:
         return null;
     }

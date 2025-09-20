@@ -28,7 +28,8 @@ export const he = {
     manageDestinations: 'ניהול יעדים ומסלולים',
     manageTemplates: 'ניהול תבניות',
     messageHistory: 'היסטוריית הודעות',
-    sentMessages: 'הודעות שנשלחו'
+    sentMessages: 'הודעות שנשלחו',
+    userManagement: 'ניהול משתמשים'
   },
 
   // Flight Form
@@ -295,5 +296,51 @@ export const he = {
       exportSuccess: 'הקובץ יוצא בהצלחה',
       exportError: 'שגיאה בייצוא הקובץ'
     }
+  },
+
+  // User Management
+  userManagement: {
+    title: 'ניהול משתמשים',
+    subtitle: 'ניהול משתמשים, הרשאות והיסטוריית התחברויות',
+    onlineUsers: 'משתמשים מחוברים',
+    totalUsers: 'סה"כ משתמשים',
+    adminUsers: 'מנהלים',
+    loginsToday: 'התחברויות היום',
+    activeUsers: 'משתמשים פעילים',
+    loginHistory: 'היסטוריית התחברויות',
+    searchUsers: 'חיפוש משתמשים...',
+    userType: 'סוג משתמש',
+    all: 'הכל',
+    admin: 'מנהל',
+    user: 'משתמש',
+    addUser: 'הוסף משתמש',
+    status: 'סטטוס',
+    role: 'תפקיד',
+    lastLogin: 'התחברות אחרונה',
+    lastActivity: 'פעילות אחרונה',
+    actions: 'פעולות',
+    view: 'צפייה',
+    edit: 'עריכה',
+    delete: 'מחיקה',
+    connected: 'מחובר',
+    disconnected: 'מנותק',
+    loginTime: 'זמן התחברות',
+    logoutTime: 'זמן התנתקות',
+    sessionDuration: 'משך הפעלה',
+    ipAddress: 'כתובת IP',
+    browser: 'דפדפן',
+    editUser: 'עריכת משתמש',
+    deleteUser: 'מחיקת משתמש',
+    fullName: 'שם מלא',
+    email: 'אימייל',
+    save: 'שמור',
+    cancel: 'ביטול',
+    deleteConfirm: 'האם אתה בטוח שברצונך למחוק את המשתמש {name}?',
+        deleteWarning: 'פעולה זו לא ניתנת לביטול.',
+        loadingUsers: 'טוען נתוני משתמשים...',
+        viewUser: 'פרטי משתמש',
+        close: 'סגור',
+        phoneNumber: 'טלפון',
+        loginCount: 'מספר התחברויות'
   }
 };

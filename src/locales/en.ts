@@ -28,7 +28,8 @@ export const en = {
     manageDestinations: 'Manage Destinations & Routes',
     manageTemplates: 'Manage Templates',
     messageHistory: 'Message History',
-    sentMessages: 'Sent Messages'
+    sentMessages: 'Sent Messages',
+    userManagement: 'User Management'
   },
 
   // Flight Form
@@ -295,5 +296,51 @@ export const en = {
       exportSuccess: 'File exported successfully',
       exportError: 'Error exporting file'
     }
+  },
+
+  // User Management
+  userManagement: {
+    title: 'User Management',
+    subtitle: 'Manage users, permissions and login history',
+    onlineUsers: 'Online Users',
+    totalUsers: 'Total Users',
+    adminUsers: 'Admins',
+    loginsToday: 'Logins Today',
+    activeUsers: 'Active Users',
+    loginHistory: 'Login History',
+    searchUsers: 'Search users...',
+    userType: 'User Type',
+    all: 'All',
+    admin: 'Admin',
+    user: 'User',
+    addUser: 'Add User',
+    status: 'Status',
+    role: 'Role',
+    lastLogin: 'Last Login',
+    lastActivity: 'Last Activity',
+    actions: 'Actions',
+    view: 'View',
+    edit: 'Edit',
+    delete: 'Delete',
+    connected: 'Connected',
+    disconnected: 'Disconnected',
+    loginTime: 'Login Time',
+    logoutTime: 'Logout Time',
+    sessionDuration: 'Session Duration',
+    ipAddress: 'IP Address',
+    browser: 'Browser',
+    editUser: 'Edit User',
+    deleteUser: 'Delete User',
+    fullName: 'Full Name',
+    email: 'Email',
+    save: 'Save',
+    cancel: 'Cancel',
+    deleteConfirm: 'Are you sure you want to delete user {name}?',
+        deleteWarning: 'This action cannot be undone.',
+        loadingUsers: 'Loading user data...',
+        viewUser: 'User Details',
+        close: 'Close',
+        phoneNumber: 'Phone Number',
+        loginCount: 'Login Count'
   }
 };
