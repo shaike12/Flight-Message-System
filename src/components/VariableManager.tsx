@@ -22,7 +22,7 @@ import { Button, TextField, Select, MenuItem, FormControl, InputLabel, Switch, F
 
 const VariableManager: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { user, userData } = useAuth();
   const { variables, loading, error } = useAppSelector((state) => state.customVariables);
 
@@ -283,10 +283,10 @@ const VariableManager: React.FC = () => {
                     onChange={handleInputChange}
                     label={language === 'he' ? 'סוג שדה' : 'Field Type'}
                   >
-                    <MenuItem value="text">{language === 'he' ? 'טקסט' : 'Text'}</MenuItem>
-                    <MenuItem value="time">{language === 'he' ? 'שעה' : 'Time'}</MenuItem>
-                    <MenuItem value="date">{language === 'he' ? 'תאריך' : 'Date'}</MenuItem>
-                    <MenuItem value="number">{language === 'he' ? 'מספר' : 'Number'}</MenuItem>
+                    <MenuItem value="text">{t.flightForm.text}</MenuItem>
+                    <MenuItem value="time">{t.flightForm.time}</MenuItem>
+                    <MenuItem value="date">{t.flightForm.date}</MenuItem>
+                    <MenuItem value="number">{t.flightForm.number}</MenuItem>
                   </Select>
                 </FormControl>
                 

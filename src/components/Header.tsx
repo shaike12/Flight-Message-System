@@ -119,8 +119,8 @@ const Header: React.FC = () => {
           {/* Logo Icon */}
           <Box
             sx={{
-              width: { xs: 40, sm: 44, md: 48 },
-              height: { xs: 40, sm: 44, md: 48 },
+              width: { xs: 50, sm: 56, md: 64 },
+              height: { xs: 50, sm: 56, md: 64 },
               borderRadius: 2,
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               display: 'flex',
@@ -146,11 +146,16 @@ const Header: React.FC = () => {
               sx={{ 
                 color: 'white',
                 fontWeight: 'bold',
-                fontSize: { xs: '1.2rem', sm: '1.4rem', md: '1.6rem' },
-                lineHeight: 1
+                fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+                lineHeight: 1,
+                textAlign: 'center',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '100%'
               }}
             >
-              EL
+              EL AL
             </Typography>
           </Box>
           

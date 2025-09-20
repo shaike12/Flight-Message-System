@@ -3,6 +3,7 @@ import { useAppDispatch } from '../store/hooks';
 import { generateMessage } from '../store/slices/messagesSlice';
 import { Flight, MessageTemplate } from '../types';
 import { MessageSquare, Send, Eye, Copy } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface MessageGeneratorProps {
   flights: Flight[];
@@ -11,6 +12,7 @@ interface MessageGeneratorProps {
 
 const MessageGenerator: React.FC<MessageGeneratorProps> = ({ flights, templates }) => {
   const dispatch = useAppDispatch();
+  const { t } = useLanguage();
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null);
   const [recipients, setRecipients] = useState<string>('');
@@ -159,17 +161,17 @@ const MessageGenerator: React.FC<MessageGeneratorProps> = ({ flights, templates 
                     <span className="font-medium">מסלול:</span> {selectedFlight.departureCity} → {selectedFlight.arrivalCity}
                   </div>
                   <div>
-                    <span className="font-medium">תאריך מקורי:</span> {selectedFlight.originalDate}
+                    <span className="font-medium">{t.flightForm.originalDate}:</span> {selectedFlight.originalDate}
                   </div>
                   <div>
-                    <span className="font-medium">שעה מקורית:</span> {selectedFlight.originalTime}
+                    <span className="font-medium">{t.flightForm.originalTime}:</span> {selectedFlight.originalTime}
                   </div>
                   <div>
-                    <span className="font-medium">שעה חדשה:</span> {selectedFlight.newTime}
+                    <span className="font-medium">{t.flightForm.newTime}:</span> {selectedFlight.newTime}
                   </div>
                   {selectedFlight.newDate && (
                     <div>
-                      <span className="font-medium">תאריך חדש:</span> {selectedFlight.newDate}
+                      <span className="font-medium">{t.flightForm.newDate}:</span> {selectedFlight.newDate}
                     </div>
                   )}
                 </div>

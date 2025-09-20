@@ -31,7 +31,8 @@ import {
   Stack, 
   useTheme, 
   useMediaQuery,
-  Autocomplete
+  Autocomplete,
+  Popover
 } from '@mui/material';
 
 interface FlightFormProps {
@@ -96,6 +97,10 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   const [currentTimeState, setCurrentTimeState] = useState(new Date());
   const [departureLocalTime, setDepartureLocalTime] = useState<string>('');
   const [departureLocalDate, setDepartureLocalDate] = useState<string>('');
+  
+  // Date picker states
+  const [datePickerAnchor, setDatePickerAnchor] = useState<HTMLElement | null>(null);
+  const [activeDateField, setActiveDateField] = useState<'originalDate' | 'newDate' | null>(null);
   const [arrivalLocalTime, setArrivalLocalTime] = useState<string>('');
   const [arrivalLocalDate, setArrivalLocalDate] = useState<string>('');
   const [departureUTCOffset, setDepartureUTCOffset] = useState<string>('');
@@ -469,6 +474,41 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [currentTime, currentDate]);
 
+  // Helper function to convert ISO date to display format
+  const formatDateForDisplay = (isoDate: string) => {
+    if (!isoDate) return '';
+    const date = new Date(isoDate);
+    if (isNaN(date.getTime())) return '';
+    
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${day}/${month}/${year}`;
+  };
+
+  // Date picker functions
+  const handleDateFieldClick = (event: React.MouseEvent<HTMLElement>, field: 'originalDate' | 'newDate') => {
+    setDatePickerAnchor(event.currentTarget);
+    setActiveDateField(field);
+  };
+
+  const handleDatePickerClose = () => {
+    setDatePickerAnchor(null);
+    setActiveDateField(null);
+  };
+
+  const handleDateSelect = (selectedDate: Date) => {
+    if (activeDateField) {
+      const isoDate = selectedDate.toISOString().split('T')[0];
+      setFormData(prev => ({
+        ...prev,
+        [activeDateField]: isoDate,
+      }));
+    }
+    handleDatePickerClose();
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
@@ -481,6 +521,42 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       }
       if (numericValue.length > 4) {
       return;
+      }
+    }
+    
+    // Handle date formatting
+    if (name === 'originalDate' || name === 'newDate') {
+      // Remove any non-digit characters except slashes
+      let cleanValue = value.replace(/[^\d/]/g, '');
+      
+      // Auto-format as user types
+      if (cleanValue.length >= 2 && !cleanValue.includes('/')) {
+        cleanValue = cleanValue.slice(0, 2) + '/' + cleanValue.slice(2);
+      }
+      if (cleanValue.length >= 5 && cleanValue.split('/').length === 2) {
+        cleanValue = cleanValue.slice(0, 5) + '/' + cleanValue.slice(5);
+      }
+      
+      // Limit to DD/MM/YYYY format
+      if (cleanValue.length > 10) {
+        cleanValue = cleanValue.slice(0, 10);
+      }
+      
+      // Update the input value
+      e.target.value = cleanValue;
+      
+      // Convert to ISO format for storage
+      if (cleanValue.length === 10) {
+        const parts = cleanValue.split('/');
+        if (parts.length === 3) {
+          const [day, month, year] = parts;
+          const isoDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          setFormData(prev => ({
+            ...prev,
+            [name]: isoDate,
+          }));
+          return;
+        }
       }
     }
     
@@ -747,7 +823,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                     }}
                     placeholder={t.flightForm.flightNumberPlaceholder}
                     error={!!errors.flightNumber}
-                    helperText={errors.flightNumber || "הזן מספר טיסה של עד 4 ספרות"}
+                    helperText={errors.flightNumber || t.flightForm.flightNumberHelper}
                     InputProps={{
                       startAdornment: (
                         <Plane size={18} style={{ marginRight: 8, color: '#667eea' }} />
@@ -762,6 +838,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                           borderColor: '#667eea',
                         },
+                      },
+                      '& .MuiInputBase-input': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiFormHelperText-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
                       },
                     }}
                   />
@@ -796,6 +884,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                           borderColor: '#667eea',
                         },
                       },
+                      '& .MuiInputBase-input': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiFormHelperText-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
                     }}
                     style={{
                       visibility: templateParameters.has('newFlightNumber') ? 'visible' : 'hidden'
@@ -822,6 +922,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                           borderColor: '#667eea',
                         },
+                        '& .MuiSelect-select': {
+                          textAlign: language === 'he' ? 'right' : 'left',
+                          direction: language === 'he' ? 'rtl' : 'ltr',
+                        },
+                        '& .MuiInputLabel-root': {
+                          textAlign: language === 'he' ? 'right' : 'left',
+                          direction: language === 'he' ? 'rtl' : 'ltr',
+                        },
+                        '& .MuiFormHelperText-root': {
+                          textAlign: language === 'he' ? 'right' : 'left',
+                          direction: language === 'he' ? 'rtl' : 'ltr',
+                        },
                       }}
                     >
                       <MenuItem value="">
@@ -839,10 +951,16 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       </Typography>
                     )}
                     {formData.departureCity && (
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
-                        🕐 {departureLocalTime} - זמן מקומי
+                      <Typography variant="caption" color="text.secondary" sx={{ 
+                        mt: 0.5, 
+                        display: 'block', 
+                        fontSize: '0.75rem',
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr'
+                      }}>
+                        🕐 {departureLocalTime} - {t.flightForm.localTime}
                         <br />
-                        📅 {departureLocalDate} - תאריך מקומי
+                        📅 {departureLocalDate} - {t.flightForm.localDate}
                       </Typography>
                     )}
                   </FormControl>
@@ -867,6 +985,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                           borderColor: '#667eea',
                         },
+                        '& .MuiSelect-select': {
+                          textAlign: language === 'he' ? 'right' : 'left',
+                          direction: language === 'he' ? 'rtl' : 'ltr',
+                        },
+                        '& .MuiInputLabel-root': {
+                          textAlign: language === 'he' ? 'right' : 'left',
+                          direction: language === 'he' ? 'rtl' : 'ltr',
+                        },
+                        '& .MuiFormHelperText-root': {
+                          textAlign: language === 'he' ? 'right' : 'left',
+                          direction: language === 'he' ? 'rtl' : 'ltr',
+                        },
                       }}
                     >
                       <MenuItem value="">
@@ -884,10 +1014,16 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       </Typography>
                     )}
                     {formData.arrivalCity && (
-                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
-                        🕐 {arrivalLocalTime} - זמן מקומי
+                      <Typography variant="caption" color="text.secondary" sx={{ 
+                        mt: 0.5, 
+                        display: 'block', 
+                        fontSize: '0.75rem',
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr'
+                      }}>
+                        🕐 {arrivalLocalTime} - {t.flightForm.localTime}
                         <br />
-                        📅 {arrivalLocalDate} - תאריך מקומי
+                        📅 {arrivalLocalDate} - {t.flightForm.localDate}
                       </Typography>
                     )}
                   </FormControl>
@@ -899,12 +1035,24 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                     fullWidth
                     label={t.flightForm.originalDate}
                     name="originalDate"
-                    type="date"
-                    value={formData.originalDate}
+                    type="text"
+                    value={formatDateForDisplay(formData.originalDate)}
                     onChange={handleInputChange}
+                    onClick={(e) => handleDateFieldClick(e, 'originalDate')}
                     error={!!errors.originalDate}
                     helperText={errors.originalDate}
-                    InputProps={{}}
+                    InputProps={{
+                      readOnly: true,
+                      endAdornment: (
+                        <IconButton
+                          onClick={(e) => handleDateFieldClick(e, 'originalDate')}
+                          edge="end"
+                          sx={{ color: '#667eea' }}
+                        >
+                          <Calendar size={18} />
+                        </IconButton>
+                      )
+                    }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
@@ -914,6 +1062,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                           borderColor: '#667eea',
                         },
+                      },
+                      '& .MuiInputBase-input': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiFormHelperText-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
                       },
                     }}
                   />
@@ -925,10 +1085,22 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                     fullWidth
                     label={t.flightForm.newDate}
                     name="newDate"
-                    type="date"
-                    value={formData.newDate}
+                    type="text"
+                    value={formatDateForDisplay(formData.newDate)}
                     onChange={handleInputChange}
-                    InputProps={{}}
+                    onClick={(e) => handleDateFieldClick(e, 'newDate')}
+                    InputProps={{
+                      readOnly: true,
+                      endAdornment: (
+                        <IconButton
+                          onClick={(e) => handleDateFieldClick(e, 'newDate')}
+                          edge="end"
+                          sx={{ color: '#667eea' }}
+                        >
+                          <Calendar size={18} />
+                        </IconButton>
+                      )
+                    }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
@@ -938,6 +1110,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                           borderColor: '#667eea',
                         },
+                      },
+                      '& .MuiInputBase-input': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiFormHelperText-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
                       },
                     }}
                     style={{
@@ -953,13 +1137,15 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                     fontSize: '0.75rem',
                     mb: 1,
                     display: 'block',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    textAlign: language === 'he' ? 'right' : 'left',
+                    direction: language === 'he' ? 'rtl' : 'ltr'
                   }}>
                     {t.flightForm.originalTimeHelper}
                   </Typography>
                   <TextField
                     fullWidth
-                    label={language === 'he' ? 'שעה מקורית (UTC) - יציאה' : 'Original Time (UTC) - Departure'}
+                    label={t.flightForm.originalTimeLabel}
                     name="originalTime"
                     type="time"
                     value={formData.originalTime}
@@ -977,16 +1163,40 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                           borderColor: '#667eea',
                         },
                       },
+                      '& .MuiInputBase-input': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiFormHelperText-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
                     }}
                   />
                   {originalTimeLocal && (
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
-                      🕐 {originalTimeLocal} - {language === 'he' ? 'זמן מקומי (יציאה)' : 'Local Time (Departure)'}
+                    <Typography variant="caption" color="text.secondary" sx={{ 
+                      mt: 0.5, 
+                      display: 'block', 
+                      fontSize: '0.75rem',
+                      textAlign: language === 'he' ? 'right' : 'left',
+                      direction: language === 'he' ? 'rtl' : 'ltr'
+                    }}>
+                      🕐 {originalTimeLocal} - {t.flightForm.localTimeDeparture}
                     </Typography>
                   )}
                   {departureUTCOffset && formData.departureCity && (
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
-                      🌍 {departureUTCOffset} - UTC של {language === 'he' 
+                    <Typography variant="caption" color="text.secondary" sx={{ 
+                      mt: 0.5, 
+                      display: 'block', 
+                      fontSize: '0.75rem',
+                      textAlign: language === 'he' ? 'right' : 'left',
+                      direction: language === 'he' ? 'rtl' : 'ltr'
+                    }}>
+                      🌍 {departureUTCOffset} - {t.flightForm.utcOf} {language === 'he' 
                         ? (memoizedCities.find(c => c.code === formData.departureCity)?.name || formData.departureCity)
                         : (memoizedCities.find(c => c.code === formData.departureCity)?.englishName || formData.departureCity)
                       }
@@ -1001,13 +1211,15 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                     fontSize: '0.75rem',
                     mb: 1,
                     display: 'block',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    textAlign: language === 'he' ? 'right' : 'left',
+                    direction: language === 'he' ? 'rtl' : 'ltr'
                   }}>
                     {t.flightForm.newTimeHelper}
                   </Typography>
                   <TextField
                     fullWidth
-                    label={language === 'he' ? 'שעה חדשה (UTC) - יציאה' : 'New Time (UTC) - Departure'}
+                    label={t.flightForm.newTimeLabel}
                     name="newTime"
                     type="time"
                     value={formData.newTime}
@@ -1025,16 +1237,40 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                           borderColor: '#667eea',
                         },
                       },
+                      '& .MuiInputBase-input': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiFormHelperText-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
                     }}
                   />
                   {newTimeLocal && (
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
-                      🕐 {newTimeLocal} - {language === 'he' ? 'זמן מקומי (יציאה)' : 'Local Time (Departure)'}
+                    <Typography variant="caption" color="text.secondary" sx={{ 
+                      mt: 0.5, 
+                      display: 'block', 
+                      fontSize: '0.75rem',
+                      textAlign: language === 'he' ? 'right' : 'left',
+                      direction: language === 'he' ? 'rtl' : 'ltr'
+                    }}>
+                      🕐 {newTimeLocal} - {t.flightForm.localTimeDeparture}
                     </Typography>
                   )}
                   {departureUTCOffset && formData.departureCity && (
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: '0.75rem' }}>
-                      🌍 {departureUTCOffset} -  של {language === 'he' 
+                    <Typography variant="caption" color="text.secondary" sx={{ 
+                      mt: 0.5, 
+                      display: 'block', 
+                      fontSize: '0.75rem',
+                      textAlign: language === 'he' ? 'right' : 'left',
+                      direction: language === 'he' ? 'rtl' : 'ltr'
+                    }}>
+                      🌍 {departureUTCOffset} - {t.flightForm.utcOf} {language === 'he' 
                         ? (memoizedCities.find(c => c.code === formData.departureCity)?.name || formData.departureCity)
                         : (memoizedCities.find(c => c.code === formData.departureCity)?.englishName || formData.departureCity)
                       }
@@ -1061,6 +1297,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                           borderColor: '#667eea',
                         },
+                      },
+                      '& .MuiInputBase-input': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiFormHelperText-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
                       },
                     }}
                     style={{
@@ -1090,6 +1338,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                           borderColor: '#667eea',
                         },
                       },
+                      '& .MuiInputBase-input': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiFormHelperText-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
                     }}
                     style={{
                       visibility: templateParameters.has('loungeOpenTime') ? 'visible' : 'hidden'
@@ -1116,6 +1376,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                         '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                           borderColor: '#667eea',
                         },
+                      },
+                      '& .MuiInputBase-input': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
+                      },
+                      '& .MuiFormHelperText-root': {
+                        textAlign: language === 'he' ? 'right' : 'left',
+                        direction: language === 'he' ? 'rtl' : 'ltr',
                       },
                     }}
                     style={{
@@ -1263,6 +1535,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                             borderColor: '#667eea',
                           },
+                        },
+                        '& .MuiInputBase-input': {
+                          textAlign: language === 'he' ? 'right' : 'left',
+                          direction: language === 'he' ? 'rtl' : 'ltr',
+                        },
+                        '& .MuiInputLabel-root': {
+                          textAlign: language === 'he' ? 'right' : 'left',
+                          direction: language === 'he' ? 'rtl' : 'ltr',
+                        },
+                        '& .MuiFormHelperText-root': {
+                          textAlign: language === 'he' ? 'right' : 'left',
+                          direction: language === 'he' ? 'rtl' : 'ltr',
                         },
                       }}
                     />
@@ -1460,13 +1744,25 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                     }
                   }}
                 >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  <Typography variant="subtitle2" sx={{ 
+                    fontWeight: 'bold', 
+                    mb: 1,
+                    textAlign: language === 'he' ? 'right' : 'left',
+                    direction: language === 'he' ? 'rtl' : 'ltr'
+                  }}>
                     {t.flightForm.flightNotFound}
                   </Typography>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
+                  <Typography variant="body2" sx={{ 
+                    mb: 1,
+                    textAlign: language === 'he' ? 'right' : 'left',
+                    direction: language === 'he' ? 'rtl' : 'ltr'
+                  }}>
                     {t.flightForm.flightNotFoundMessage}
                   </Typography>
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{
+                    textAlign: language === 'he' ? 'right' : 'left',
+                    direction: language === 'he' ? 'rtl' : 'ltr'
+                  }}>
                     {t.flightForm.checkFlightNumber}
                   </Typography>
                 </Alert>
@@ -1475,6 +1771,141 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
           </Card>
         </Box>
       </Box>
+
+      {/* Date Picker Popover */}
+      <Popover
+        open={Boolean(datePickerAnchor)}
+        anchorEl={datePickerAnchor}
+        onClose={handleDatePickerClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            borderRadius: 2,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            border: '1px solid rgba(102, 126, 234, 0.2)',
+            backdropFilter: 'blur(10px)',
+            background: 'rgba(255, 255, 255, 0.95)',
+          }
+        }}
+      >
+        <Box sx={{ p: 2, minWidth: 280 }}>
+          <Typography variant="h6" sx={{ mb: 2, textAlign: 'center', color: '#667eea', fontWeight: 'bold' }}>
+            {activeDateField === 'originalDate' ? t.flightForm.originalDate : t.flightForm.newDate}
+          </Typography>
+          
+          {/* Simple Date Picker */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {/* Year Selector */}
+            <FormControl fullWidth size="small">
+              <InputLabel>{t.flightForm.datePicker.year}</InputLabel>
+              <Select
+                value={activeDateField ? new Date(formData[activeDateField]).getFullYear() : new Date().getFullYear()}
+                onChange={(e) => {
+                  if (activeDateField) {
+                    const currentDate = new Date(formData[activeDateField]);
+                    currentDate.setFullYear(Number(e.target.value));
+                    handleDateSelect(currentDate);
+                  }
+                }}
+                sx={{ borderRadius: 1 }}
+              >
+                {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i - 2).map(year => (
+                  <MenuItem key={year} value={year}>{year}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Month Selector */}
+            <FormControl fullWidth size="small">
+              <InputLabel>{t.flightForm.datePicker.month}</InputLabel>
+              <Select
+                value={activeDateField ? new Date(formData[activeDateField]).getMonth() : new Date().getMonth()}
+                onChange={(e) => {
+                  if (activeDateField) {
+                    const currentDate = new Date(formData[activeDateField]);
+                    currentDate.setMonth(Number(e.target.value));
+                    handleDateSelect(currentDate);
+                  }
+                }}
+                sx={{ borderRadius: 1 }}
+              >
+                {[
+                  'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+                  'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+                ].map((month, index) => (
+                  <MenuItem key={index} value={index}>{month}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Day Selector */}
+            <FormControl fullWidth size="small">
+              <InputLabel>{t.flightForm.datePicker.day}</InputLabel>
+              <Select
+                value={activeDateField ? new Date(formData[activeDateField]).getDate() : new Date().getDate()}
+                onChange={(e) => {
+                  if (activeDateField) {
+                    const currentDate = new Date(formData[activeDateField]);
+                    currentDate.setDate(Number(e.target.value));
+                    handleDateSelect(currentDate);
+                  }
+                }}
+                sx={{ borderRadius: 1 }}
+              >
+                {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                  <MenuItem key={day} value={day}>{day}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+
+          {/* Quick Actions */}
+          <Box sx={{ mt: 2, display: 'flex', gap: 1, justifyContent: 'center' }}>
+            <Button
+              size="small"
+              onClick={() => handleDateSelect(new Date())}
+              sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                borderRadius: 1,
+                px: 2,
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                }
+              }}
+              >
+                {t.flightForm.datePicker.today}
+              </Button>
+            <Button
+              size="small"
+              onClick={() => {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                handleDateSelect(tomorrow);
+              }}
+              sx={{
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: 'white',
+                borderRadius: 1,
+                px: 2,
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #0ea472 0%, #047857 100%)',
+                }
+              }}
+              >
+                {t.flightForm.datePicker.tomorrow}
+              </Button>
+          </Box>
+        </Box>
+      </Popover>
 
       {/* Copy Toast using Portal */}
       {showCopyToast && copyButtonRef && createPortal(
@@ -1502,7 +1933,11 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
           }}
         >
           <CheckCircle size={16} />
-          <Typography variant="body2" sx={{ fontWeight: 'inherit' }}>
+          <Typography variant="body2" sx={{ 
+            fontWeight: 'inherit',
+            textAlign: language === 'he' ? 'right' : 'left',
+            direction: language === 'he' ? 'rtl' : 'ltr'
+          }}>
             {t.common.copy}!
           </Typography>
         </Box>,
