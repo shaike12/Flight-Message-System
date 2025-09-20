@@ -312,7 +312,6 @@ export const he = {
     userType: 'סוג משתמש',
     all: 'הכל',
     admin: 'מנהל',
-    user: 'משתמש',
     addUser: 'הוסף משתמש',
     status: 'סטטוס',
     role: 'תפקיד',

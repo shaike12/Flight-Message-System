@@ -28,8 +28,6 @@ import {
   Tabs,
   Tab,
   Avatar,
-  Grid,
-  Divider,
   Badge,
   LinearProgress
 } from '@mui/material';
@@ -48,11 +46,8 @@ import {
   RefreshCw,
   Search,
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useTheme } from '@mui/material/styles';
-import { useMediaQuery } from '@mui/material';
-import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { getAvatarColor, getUserInitials } from '../utils/avatarUtils';
 
@@ -83,10 +78,7 @@ interface LoginHistory {
 }
 
 const UserManagement: React.FC = () => {
-  const { userData } = useAuth();
   const { t } = useLanguage();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const [activeTab, setActiveTab] = useState(0);
   const [users, setUsers] = useState<UserData[]>([]);
@@ -335,8 +327,13 @@ const UserManagement: React.FC = () => {
         </Box>
 
         {/* Statistics Cards */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+          gap: 2,
+          mb: 3 
+        }}>
+          <Box>
             <Card sx={{ 
               background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)',
               border: '1px solid rgba(16, 185, 129, 0.2)'
@@ -357,8 +354,8 @@ const UserManagement: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box>
             <Card sx={{ 
               background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%)',
               border: '1px solid rgba(59, 130, 246, 0.2)'
@@ -377,8 +374,8 @@ const UserManagement: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box>
             <Card sx={{ 
               background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)',
               border: '1px solid rgba(168, 85, 247, 0.2)'
@@ -397,8 +394,8 @@ const UserManagement: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box>
             <Card sx={{ 
               background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%)',
               border: '1px solid rgba(245, 158, 11, 0.2)'
@@ -417,8 +414,8 @@ const UserManagement: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Box>
 
       {/* Tabs */}
@@ -768,7 +765,7 @@ const UserManagement: React.FC = () => {
                     </Typography>
                   </Box>
                 )}
-              </Grid>
+              </Box>
             </Box>
           )}
         </DialogContent>

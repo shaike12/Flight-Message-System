@@ -312,7 +312,6 @@ export const en = {
     userType: 'User Type',
     all: 'All',
     admin: 'Admin',
-    user: 'User',
     addUser: 'Add User',
     status: 'Status',
     role: 'Role',

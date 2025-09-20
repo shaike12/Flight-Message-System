@@ -29,7 +29,6 @@ import {
   BarChart3, 
   Database, 
   Settings,
-  Users,
   MessageSquare,
   Shield
 } from 'lucide-react';
