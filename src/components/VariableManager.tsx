@@ -33,9 +33,11 @@ const VariableManager: React.FC = () => {
     name: '',
     displayName: '',
     displayNameEnglish: '',
+    displayNameFrench: '',
     type: 'text' as 'text' | 'time' | 'date' | 'number',
     placeholder: '',
     placeholderEnglish: '',
+    placeholderFrench: '',
     isActive: true,
     order: 0,
   });
@@ -62,9 +64,11 @@ const VariableManager: React.FC = () => {
       name: '',
       displayName: '',
       displayNameEnglish: '',
+      displayNameFrench: '',
       type: 'text',
       placeholder: '',
       placeholderEnglish: '',
+      placeholderFrench: '',
       isActive: true,
       order: variables.length + 1,
     });
@@ -77,9 +81,11 @@ const VariableManager: React.FC = () => {
       name: variable.name,
       displayName: variable.displayName,
       displayNameEnglish: variable.displayNameEnglish,
+      displayNameFrench: variable.displayNameFrench || '',
       type: variable.type,
       placeholder: variable.placeholder,
       placeholderEnglish: variable.placeholderEnglish,
+      placeholderFrench: variable.placeholderFrench || '',
       isActive: variable.isActive,
       order: variable.order || 0,
     });
@@ -103,9 +109,11 @@ const VariableManager: React.FC = () => {
         name: '',
         displayName: '',
         displayNameEnglish: '',
+        displayNameFrench: '',
         type: 'text',
         placeholder: '',
         placeholderEnglish: '',
+        placeholderFrench: '',
         isActive: true,
         order: 0,
       });
@@ -122,9 +130,11 @@ const VariableManager: React.FC = () => {
       name: '',
       displayName: '',
       displayNameEnglish: '',
+      displayNameFrench: '',
       type: 'text',
       placeholder: '',
       placeholderEnglish: '',
+      placeholderFrench: '',
       isActive: true,
       order: 0,
     });
@@ -539,6 +549,27 @@ const VariableManager: React.FC = () => {
                 />
               </Box>
 
+              {/* Display Name French */}
+              <Box>
+                <TextField
+                  label={language === 'he' ? 'שם תצוגה (צרפתית)' : 'Display Name (French)'}
+                  name="displayNameFrench"
+                  value={formData.displayNameFrench}
+                  onChange={handleInputChange}
+                  placeholder="Numéro de porte"
+                  fullWidth
+                  size="medium"
+                  sx={{ 
+                    mb: 1,
+                    '& .MuiInputBase-input': {
+                      direction: 'ltr',
+                      textAlign: 'left'
+                    }
+                  }}
+                  helperText={language === 'he' ? 'דוגמה: Numéro de porte, Code terminal, Statut du vol' : 'Example: Numéro de porte, Code terminal, Statut du vol'}
+                />
+              </Box>
+
               {/* Field Type */}
               <Box>
                 <FormControl fullWidth size="medium" sx={{ mb: 1 }}>
@@ -595,6 +626,27 @@ const VariableManager: React.FC = () => {
                   value={formData.placeholderEnglish}
                   onChange={handleInputChange}
                   placeholder="Enter gate number"
+                  fullWidth
+                  size="medium"
+                  sx={{ 
+                    mb: 1,
+                    '& .MuiInputBase-input': {
+                      direction: 'ltr',
+                      textAlign: 'left'
+                    }
+                  }}
+                  helperText={language === 'he' ? 'טקסט שיופיע בתוך השדה כהנחיה למשתמש' : 'Text that will appear inside the field as user guidance'}
+                />
+              </Box>
+
+              {/* Placeholder French */}
+              <Box>
+                <TextField
+                  label={language === 'he' ? 'טקסט עזר (צרפתית)' : 'Placeholder (French)'}
+                  name="placeholderFrench"
+                  value={formData.placeholderFrench}
+                  onChange={handleInputChange}
+                  placeholder="Entrez le numéro de porte"
                   fullWidth
                   size="medium"
                   sx={{ 

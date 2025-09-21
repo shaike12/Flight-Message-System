@@ -565,6 +565,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                     color: '#374151',
                     borderBottom: '2px solid #e5e7eb',
                     textAlign: 'center',
+                    verticalAlign: 'middle',
                     fontSize: { xs: '0.875rem', sm: '1rem' },
                     padding: { xs: '8px 4px', sm: '16px' }
                   }}>
@@ -716,12 +717,12 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                 {combinedData.map((row) => (
                   <TableRow key={row.id} hover>
                     {/* Flight Number Column */}
-                    <TableCell sx={{ textAlign: 'center' }}>
-                      <Stack direction="row" alignItems="center" spacing={2}>
+                    <TableCell sx={{ textAlign: 'center', verticalAlign: 'middle' }}>
+                      <Stack direction="row" alignItems="center" justifyContent="center" spacing={2}>
                         <Avatar sx={{ bgcolor: '#e0f2fe', width: 32, height: 32 }}>
                           <Plane size={16} color="#3b82f6" />
                         </Avatar>
-                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
                             {editingItem === row.id ? (
                             <TextField
                               size="small"
@@ -730,11 +731,12 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                                   const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                                   setRouteEditForm({...routeEditForm, flightNumber: value});
                                 }}
-                              sx={{ width: 100 }}
+                              sx={{ width: 100, textAlign: 'center' }}
                               inputProps={{ 
                                 maxLength: 4,
                                 pattern: '[0-9]*',
-                                inputMode: 'numeric'
+                                inputMode: 'numeric',
+                                style: { textAlign: 'center' }
                               }}
                               />
                             ) : (

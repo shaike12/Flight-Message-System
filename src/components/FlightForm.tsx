@@ -95,6 +95,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [generatedText, setGeneratedText] = useState<string>('');
   const [generatedEnglishText, setGeneratedEnglishText] = useState<string>('');
+  const [generatedFrenchText, setGeneratedFrenchText] = useState<string>('');
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [showCopyToast, setShowCopyToast] = useState(false);
   const [copyButtonRef, setCopyButtonRef] = useState<HTMLButtonElement | null>(null);
@@ -135,7 +136,11 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
 
   // Get which parameters are needed for the selected template
   const templateParameters = selectedTemplateData ? 
-    getTemplateParameters(selectedTemplateData.content || '') : 
+    new Set([
+      ...Array.from(getTemplateParameters(selectedTemplateData.content || '')),
+      ...Array.from(getTemplateParameters(selectedTemplateData.englishContent || '')),
+      ...Array.from(getTemplateParameters(selectedTemplateData.frenchContent || ''))
+    ]) : 
     new Set<string>();
 
 
@@ -165,6 +170,14 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       handleCopyToClipboard(generatedEnglishText, buttonElement);
     }
   }, [generatedEnglishText, handleCopyToClipboard]);
+
+  // Copy French text
+  const copyFrenchText = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    if (generatedFrenchText) {
+      const buttonElement = e.currentTarget;
+      handleCopyToClipboard(generatedFrenchText, buttonElement);
+    }
+  }, [generatedFrenchText, handleCopyToClipboard]);
 
   // Load form data from localStorage and fetch cities on component mount
   useEffect(() => {
@@ -390,6 +403,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
         !formData.originalDate || !formData.originalTime || !formData.newTime) {
       setGeneratedText('');
       setGeneratedEnglishText('');
+      setGeneratedFrenchText('');
       setError(null);
       setIsGenerating(false);
       return;
@@ -400,6 +414,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     if (!flightExists) {
       setGeneratedText('');
       setGeneratedEnglishText('');
+      setGeneratedFrenchText('');
       setError(null);
       setIsGenerating(false);
       return;
@@ -408,6 +423,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     if (!selectedTemplateData) {
       setGeneratedText('');
       setGeneratedEnglishText('');
+      setGeneratedFrenchText('');
       setError(null);
       setIsGenerating(false);
       return;
@@ -497,14 +513,40 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       }
     });
 
+    // Generate French message
+    const frenchTemplateContent = selectedTemplateData.frenchContent || selectedTemplateData.englishContent || selectedTemplateData.content || '';
+    let frenchText = frenchTemplateContent
+      .replace('{flightNumber}', formData.flightNumber ? formattedFlightNumber : '***')
+      .replace('{newFlightNumber}', formData.newFlightNumber ? formattedNewFlightNumber : '***')
+      .replace('{departureCity}', formData.departureCity ? departureCityNameEnglish : '***')
+      .replace('{arrivalCity}', formData.arrivalCity ? arrivalCityNameEnglish : '***')
+      .replace('{originalDate}', formData.originalDate ? originalDateFormattedEnglish : '***')
+      .replace('{originalTime}', formData.originalTime || '***')
+      .replace('{newTime}', newTimeLocal || '***')
+      .replace('{newDate}', formData.newDate ? newDateFormattedEnglish : '***')
+      .replace('{loungeOpenTime}', formData.loungeOpenTime || '***')
+      .replace('{counterOpenTime}', formData.counterOpenTime || '***')
+      .replace('{counterCloseTime}', formData.counterCloseTime || '***')
+      .replace('{internetCode}', formData.internetCode || '***');
+
+    // Replace custom variables in French template
+    customVariables?.forEach(variable => {
+      if (variable.isActive) {
+        const value = formData[variable.name] || '***';
+        frenchText = frenchText.replace(`{${variable.name}}`, value);
+      }
+    });
+
     try {
       setGeneratedText(hebrewText);
     setGeneratedEnglishText(englishText);
+      setGeneratedFrenchText(frenchText);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה ביצירת ההודעה');
       setGeneratedText('');
       setGeneratedEnglishText('');
+      setGeneratedFrenchText('');
     } finally {
       setIsGenerating(false);
     }
@@ -601,6 +643,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
         newTime: formData.newTime,
         hebrewMessage: generatedText,
         englishMessage: generatedEnglishText,
+        frenchMessage: generatedFrenchText,
         sentBy: userData.name,
         sentAt: new Date().toISOString(),
         templateId: selectedTemplate,
@@ -638,6 +681,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       setSelectedTemplate('');
       setGeneratedText('');
       setGeneratedEnglishText('');
+      setGeneratedFrenchText('');
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -759,6 +803,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       });
       setGeneratedText('');
       setGeneratedEnglishText('');
+      setGeneratedFrenchText('');
       setSelectedTemplate('');
       setShowAddRouteButton(false);
     }
@@ -1918,6 +1963,70 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                           }}
                         >
                           {generatedEnglishText}
+                        </Typography>
+                      </Paper>
+                    </Box>
+                  )}
+
+          {/* French Message */}
+          {generatedFrenchText && (
+                    <Box>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between', 
+                        mb: 2 
+                      }}>
+                        <Typography variant="subtitle2" sx={{ 
+                          fontWeight: 'bold',
+                          color: 'text.primary',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1
+                        }}>
+                          🇫🇷 {language === 'he' ? 'הודעה צרפתית' : 'French Message'}
+                        </Typography>
+                        <Button
+                          onClick={copyFrenchText}
+                          size="small"
+                          startIcon={<Copy size={14} />}
+                          sx={{
+                            borderRadius: 2,
+                            textTransform: 'none',
+                            fontSize: '0.75rem',
+                            px: 2,
+                            py: 0.5,
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            color: 'white',
+                            '&:hover': {
+                              background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                            }
+                          }}
+                        >
+                          {t.flightForm.copy}
+                        </Button>
+                      </Box>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 3,
+                          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
+                          border: '1px solid rgba(102, 126, 234, 0.1)',
+                          borderRadius: 2,
+                          direction: 'ltr'
+                        }}
+                      >
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            whiteSpace: 'pre-wrap',
+                            fontFamily: 'monospace',
+                            fontWeight: 'medium',
+                            lineHeight: 1.6,
+                            color: 'text.primary'
+                          }}
+                        >
+                          {generatedFrenchText}
                         </Typography>
                       </Paper>
                     </Box>

@@ -60,6 +60,7 @@ interface SentMessage {
   newTime: string;
   hebrewMessage: string;
   englishMessage: string;
+  frenchMessage?: string;
   sentBy: string;
   sentAt: string;
   templateId: string;
@@ -223,6 +224,7 @@ const SentMessages: React.FC = () => {
         'שעה חדשה',
         'הודעה עברית',
         'הודעה באנגלית',
+        'הודעה צרפתית',
         'נשלח על ידי',
         'נשלח בתאריך'
       ];
@@ -239,6 +241,7 @@ const SentMessages: React.FC = () => {
           formatTime(message.newTime),
           `"${message.hebrewMessage.replace(/"/g, '""')}"`,
           `"${message.englishMessage.replace(/"/g, '""')}"`,
+          `"${message.frenchMessage?.replace(/"/g, '""') || ''}"`,
           `"${message.sentBy}"`,
           formatDate(message.sentAt)
         ].join(','))
@@ -707,6 +710,19 @@ const SentMessages: React.FC = () => {
                   </Typography>
                 </Paper>
               </Box>
+
+              {selectedMessage.frenchMessage && (
+                <Box>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    🇫🇷 {language === 'he' ? 'הודעה צרפתית' : 'French Message'}
+                  </Typography>
+                  <Paper sx={{ p: 2, backgroundColor: 'rgba(102, 126, 234, 0.05)' }}>
+                    <Typography sx={{ direction: 'ltr', textAlign: 'left' }}>
+                      {selectedMessage.frenchMessage}
+                    </Typography>
+                  </Paper>
+                </Box>
+              )}
               
               <Divider />
               

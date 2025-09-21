@@ -33,13 +33,14 @@ const TemplateManager: React.FC = () => {
     name: '',
     content: '',
     englishContent: '',
+    frenchContent: '',
     isActive: true,
   });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOverField, setDragOverField] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeField, setActiveField] = useState<'content' | 'englishContent' | null>(null);
+  const [activeField, setActiveField] = useState<'content' | 'englishContent' | 'frenchContent' | null>(null);
 
   // Load custom variables when component mounts
   useEffect(() => {
@@ -50,6 +51,7 @@ const TemplateManager: React.FC = () => {
     name: string;
     content: string;
     englishContent: string;
+    frenchContent: string;
     isActive: boolean;
   } | null>(null);
 
@@ -97,11 +99,29 @@ const TemplateManager: React.FC = () => {
       .replace(/\{internetCode\}/g, 'ABC123');
   };
 
+  // Function to replace parameters with French example values
+  const replaceParametersWithFrenchExamples = (content: string): string => {
+    return content
+      .replace(/\{flightNumber\}/g, 'LY221')
+      .replace(/\{newFlightNumber\}/g, 'LY222')
+      .replace(/\{departureCity\}/g, 'Tel Aviv')
+      .replace(/\{arrivalCity\}/g, 'Paris')
+      .replace(/\{originalDate\}/g, '25 décembre')
+      .replace(/\{newDate\}/g, '26 décembre')
+      .replace(/\{originalTime\}/g, '14:30')
+      .replace(/\{newTime\}/g, '15:30')
+      .replace(/\{loungeOpenTime\}/g, '12:00')
+      .replace(/\{counterOpenTime\}/g, '13:00')
+      .replace(/\{counterCloseTime\}/g, '14:00')
+      .replace(/\{internetCode\}/g, 'ABC123');
+  };
+
   // Check if form has changes
   const hasChanges = originalFormData ? (
     formData.name !== originalFormData.name ||
     formData.content !== originalFormData.content ||
     formData.englishContent !== originalFormData.englishContent ||
+    formData.frenchContent !== originalFormData.frenchContent ||
     formData.isActive !== originalFormData.isActive
   ) : false;
 
@@ -156,14 +176,14 @@ const TemplateManager: React.FC = () => {
     setDragOverField(null);
   };
 
-  const handleDrop = (e: React.DragEvent, field: 'content' | 'englishContent') => {
+  const handleDrop = (e: React.DragEvent, field: 'content' | 'englishContent' | 'frenchContent') => {
     e.preventDefault();
     const parameter = e.dataTransfer.getData('text/plain');
     insertParameter(parameter, field);
     setDragOverField(null);
   };
 
-  const insertParameter = (parameter: string, field: 'content' | 'englishContent') => {
+  const insertParameter = (parameter: string, field: 'content' | 'englishContent' | 'frenchContent') => {
     const currentValue = formData[field];
     const newValue = currentValue + `{${parameter}}`;
     setFormData({ ...formData, [field]: newValue });
@@ -218,7 +238,7 @@ const TemplateManager: React.FC = () => {
       }));
     }
 
-    setFormData({ name: '', content: '', englishContent: '', isActive: true });
+    setFormData({ name: '', content: '', englishContent: '', frenchContent: '', isActive: true });
     setEditingTemplate(null);
     setEditingTemplateId(null);
     setOriginalFormData(null);
@@ -236,6 +256,7 @@ const TemplateManager: React.FC = () => {
       name: template.name,
       content: template.content,
       englishContent: template.englishContent || '',
+      frenchContent: template.frenchContent || '',
       isActive: template.isActive,
     };
     setFormData(templateData);
@@ -411,13 +432,37 @@ const TemplateManager: React.FC = () => {
               
               {/* Template content */}
               <div className="flex-1 w-full">
-                <div className="text-sm mb-3 whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--mui-palette-text-primary)' }}>
+                {/* Hebrew Content */}
+                <div className="text-sm mb-3 whitespace-pre-wrap leading-relaxed" style={{ color: '#1f2937' }}>
                     {replaceParametersWithExamples(template.content)}
                 </div>
-                  {template.englishContent && (
-                  <div className="text-sm mb-3 whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--mui-palette-text-secondary)' }}>
-                      {replaceParametersWithEnglishExamples(template.englishContent)}
-                  </div>
+                
+                {/* English Content */}
+                {template.englishContent && (
+                  <>
+                    <div className="w-full mb-3 flex items-center">
+                      <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(0, 0, 0, 0.08)' }}></div>
+                      <div className="mx-2 text-xs" style={{ color: 'rgba(0, 0, 0, 0.4)' }}>•</div>
+                      <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(0, 0, 0, 0.08)' }}></div>
+                    </div>
+                    <div className="text-sm mb-3 whitespace-pre-wrap leading-relaxed" style={{ color: '#3b82f6' }}>
+                        {replaceParametersWithEnglishExamples(template.englishContent)}
+                    </div>
+                  </>
+                )}
+                
+                {/* French Content */}
+                {template.frenchContent && (
+                  <>
+                    <div className="w-full mb-3 flex items-center">
+                      <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(0, 0, 0, 0.08)' }}></div>
+                      <div className="mx-2 text-xs" style={{ color: 'rgba(0, 0, 0, 0.4)' }}>•</div>
+                      <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(0, 0, 0, 0.08)' }}></div>
+                    </div>
+                    <div className="text-sm mb-3 whitespace-pre-wrap leading-relaxed" style={{ color: '#10b981' }}>
+                        {replaceParametersWithFrenchExamples(template.frenchContent)}
+                    </div>
+                  </>
                 )}
               </div>
               
@@ -462,7 +507,7 @@ const TemplateManager: React.FC = () => {
         onClose={() => {
           setShowForm(false);
           setEditingTemplate(null);
-          setFormData({ name: '', content: '', englishContent: '', isActive: true });
+          setFormData({ name: '', content: '', englishContent: '', frenchContent: '', isActive: true });
           setValidationErrors({});
         }}
         closeAfterTransition
@@ -535,7 +580,7 @@ const TemplateManager: React.FC = () => {
                 onClick={() => {
                   setShowForm(false);
                   setEditingTemplate(null);
-                  setFormData({ name: '', content: '', englishContent: '', isActive: true });
+                  setFormData({ name: '', content: '', englishContent: '', frenchContent: '', isActive: true });
                   setValidationErrors({});
                 }}
                 sx={{
@@ -800,6 +845,73 @@ const TemplateManager: React.FC = () => {
                     />
                   </Paper>
 
+                  {/* French Content */}
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      borderRadius: 3,
+                      border: '1px solid #e5e7eb',
+                      background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                      mb: 3,
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6" sx={{ 
+                        fontWeight: 'bold', 
+                        color: '#374151',
+                        mr: 2
+                      }}>
+                        {t.templateManager.frenchContentLabel}
+                      </Typography>
+                      <Box sx={{ 
+                        flex: 1, 
+                        height: '2px', 
+                        background: 'linear-gradient(90deg, #e5e7eb 0%, transparent 100%)' 
+                      }} />
+                    </Box>
+                    <Box sx={{ position: 'relative' }}>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={6}
+                        value={formData.frenchContent}
+                        onChange={(e) => setFormData({ ...formData, frenchContent: e.target.value })}
+                        onFocus={() => setActiveField('frenchContent')}
+                        onDragOver={(e) => handleDragOver(e, 'frenchContent')}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, 'frenchContent')}
+                        helperText="Cliquez sur les paramètres ou faites-les glisser ici..."
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            backgroundColor: dragOverField === 'frenchContent' ? '#f0fdf4' : 'white',
+                            border: dragOverField === 'frenchContent' ? '2px dashed #10b981' : 'none',
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#10b981',
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#10b981',
+                              borderWidth: 2,
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            fontFamily: 'Arial, sans-serif',
+                            fontSize: '14px',
+                            lineHeight: 1.6,
+                            direction: 'ltr',
+                            textAlign: 'left',
+                          },
+                          '& .MuiFormHelperText-root': {
+                            color: '#6b7280',
+                            fontSize: '12px',
+                            fontStyle: 'italic',
+                          },
+                        }}
+                      />
+                    </Box>
+                  </Paper>
+
                   {/* Active Template & Buttons */}
                   <Paper
                     elevation={0}
@@ -869,7 +981,7 @@ const TemplateManager: React.FC = () => {
                           onClick={() => {
                             setShowForm(false);
                             setEditingTemplate(null);
-                            setFormData({ name: '', content: '', englishContent: '', isActive: true });
+                            setFormData({ name: '', content: '', englishContent: '', frenchContent: '', isActive: true });
                             setValidationErrors({});
                           }}
                           sx={{ 

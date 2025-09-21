@@ -18,6 +18,7 @@ export interface MessageTemplate {
   name: string;
   content: string;
   englishContent?: string;
+  frenchContent?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -54,9 +55,11 @@ export interface FlightRoute {
   departureCity: string;
   departureCityHebrew: string;
   departureCityEnglish: string;
+  departureCityFrench?: string;
   arrivalCity: string;
   arrivalCityHebrew: string;
   arrivalCityEnglish: string;
+  arrivalCityFrench?: string;
   airline: 'ELAL' | 'Sundor';
 }
 
@@ -66,9 +69,11 @@ export interface CustomVariable {
   name: string;
   displayName: string;
   displayNameEnglish: string;
+  displayNameFrench?: string;
   type: 'text' | 'time' | 'date' | 'number';
   placeholder: string;
   placeholderEnglish: string;
+  placeholderFrench?: string;
   isActive: boolean;
   order: number; // Field to control display order
   createdAt: string;
