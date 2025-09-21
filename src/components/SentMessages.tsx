@@ -216,8 +216,8 @@ const SentMessages: React.FC = () => {
       // Create CSV content
       const headers = [
         'מספר טיסה',
-        'עיר יציאה',
-        'עיר הגעה',
+        'יציאה',
+        'נחיתה',
         'תאריך מקורי',
         'שעה מקורית',
         'תאריך חדש',

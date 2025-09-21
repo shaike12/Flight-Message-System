@@ -42,7 +42,9 @@ export const signUp = async (email: string, password: string, userData: { name: 
       name: userData.name,
       role: userData.role,
       createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      loginCount: 1,
+      isOnline: true
     });
     
     return { success: true, user };
@@ -56,9 +58,14 @@ export const signIn = async (email: string, password: string) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
-    // Update last login time
+    // Update last login time, set online status, and increment login count
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    const currentLoginCount = userDoc.exists() ? (userDoc.data()?.loginCount || 0) : 0;
+    
     await setDoc(doc(db, 'users', user.uid), {
-      lastLogin: new Date().toISOString()
+      lastLogin: new Date().toISOString(),
+      isOnline: true,
+      loginCount: currentLoginCount + 1
     }, { merge: true });
     
     return { success: true, user };
@@ -69,6 +76,13 @@ export const signIn = async (email: string, password: string) => {
 
 export const logout = async () => {
   try {
+    // Update user status to offline before signing out
+    if (auth.currentUser) {
+      await setDoc(doc(db, 'users', auth.currentUser.uid), {
+        isOnline: false
+      }, { merge: true });
+    }
+    
     await signOut(auth);
     return { success: true };
   } catch (error: any) {
@@ -132,12 +146,19 @@ export const signInWithGoogle = async () => {
         role: 'user', // Default role for Google users
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString(),
+        loginCount: 1,
+        isOnline: true,
         provider: 'google'
       });
     } else {
       // Update last login time for existing user
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const currentLoginCount = userDoc.exists() ? (userDoc.data()?.loginCount || 0) : 0;
+      
       await setDoc(doc(db, 'users', user.uid), {
-        lastLogin: new Date().toISOString()
+        lastLogin: new Date().toISOString(),
+        isOnline: true,
+        loginCount: currentLoginCount + 1
       }, { merge: true });
     }
     
@@ -246,12 +267,19 @@ export const verifyPhoneCode = async (confirmationResult: any, code: string) => 
         role: 'user', // Default role for phone users
         createdAt: new Date().toISOString(),
         lastLogin: new Date().toISOString(),
+        loginCount: 1,
+        isOnline: true,
         provider: 'phone'
       });
     } else {
       // Update last login time for existing user
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const currentLoginCount = userDoc.exists() ? (userDoc.data()?.loginCount || 0) : 0;
+      
       await setDoc(doc(db, 'users', user.uid), {
-        lastLogin: new Date().toISOString()
+        lastLogin: new Date().toISOString(),
+        isOnline: true,
+        loginCount: currentLoginCount + 1
       }, { merge: true });
     }
     

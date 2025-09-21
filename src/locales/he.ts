@@ -141,7 +141,7 @@ export const he = {
     parameters: {
       flightNumber: 'מספר טיסה',
       newFlightNumber: 'מספר טיסה חדש',
-      departureCity: 'עיר יציאה',
+      departureCity: 'יציאה',
       arrivalCity: 'עיר נחיתה',
       originalDate: 'תאריך מקורי',
       newDate: 'תאריך חדש',
@@ -183,7 +183,7 @@ export const he = {
     foundRoutes: 'נמצאו {count} מסלולי טיסות עבור "{searchTerm}"',
     loadingRoutes: 'טוען מסלולי טיסות...',
     errorLoadingRoutes: 'שגיאה בטעינת מסלולי הטיסות',
-    departureCityCode: 'עיר יציאה (קוד)',
+    departureCityCode: 'יציאה (קוד)',
     arrivalCityCode: 'נחיתה (קוד)',
     departureCityHebrew: 'יציאה (עברית)',
     departureCityEnglish: 'יציאה (אנגלית)',

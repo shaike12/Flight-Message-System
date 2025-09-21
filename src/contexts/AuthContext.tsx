@@ -72,8 +72,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, []);
+    // Handle page unload - set user offline
+    const handleBeforeUnload = async () => {
+      if (user) {
+        try {
+          const { doc, setDoc } = await import('firebase/firestore');
+          const { db } = await import('../firebase/auth');
+          await setDoc(doc(db, 'users', user.uid), {
+            isOnline: false
+          }, { merge: true });
+        } catch (error) {
+          console.error('Error setting user offline:', error);
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [user]);
 
   // Auto-logout after 8 hours
   useEffect(() => {

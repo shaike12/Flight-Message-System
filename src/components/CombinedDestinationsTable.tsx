@@ -645,7 +645,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                           type="text"
                           value={routeEditForm.departureCity}
                           onChange={(e) => setRouteEditForm({...routeEditForm, departureCity: e.target.value})}
-                          placeholder="קוד עיר יציאה (TLV)"
+                          placeholder="קוד יציאה (TLV)"
                           className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
                         />
                         <input
@@ -754,7 +754,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                             size="small"
                               value={routeEditForm.departureCity}
                               onChange={(e) => setRouteEditForm({...routeEditForm, departureCity: e.target.value})}
-                              placeholder="קוד עיר יציאה (TLV)"
+                              placeholder="קוד יציאה (TLV)"
                             sx={{ width: '100%', '& .MuiInputBase-input': { textAlign: 'right' } }}
                             />
                           <TextField

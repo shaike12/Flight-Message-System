@@ -132,8 +132,8 @@ const TemplateManager: React.FC = () => {
     const basicParameters = [
       { key: 'flightNumber', label: language === 'he' ? 'מספר טיסה' : 'Flight Number' },
       { key: 'newFlightNumber', label: language === 'he' ? 'מספר טיסה חדש' : 'New Flight Number' },
-      { key: 'departureCity', label: language === 'he' ? 'עיר יציאה' : 'Departure City' },
-      { key: 'arrivalCity', label: language === 'he' ? 'עיר הגעה' : 'Arrival City' },
+      { key: 'departureCity', label: language === 'he' ? 'יציאה' : 'Departure City' },
+      { key: 'arrivalCity', label: language === 'he' ? 'נחיתה' : 'Arrival City' },
       { key: 'originalDate', label: language === 'he' ? 'תאריך מקורי' : 'Original Date' },
       { key: 'newDate', label: language === 'he' ? 'תאריך חדש' : 'New Date' },
       { key: 'originalTime', label: language === 'he' ? 'שעה מקורית' : 'Original Time' },
