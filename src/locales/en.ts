@@ -312,6 +312,7 @@ export const en = {
     userType: 'User Type',
     all: 'All',
     admin: 'Admin',
+    user: 'User',
     addUser: 'Add User',
     status: 'Status',
     role: 'Role',
@@ -340,6 +341,12 @@ export const en = {
         viewUser: 'User Details',
         close: 'Close',
         phoneNumber: 'Phone Number',
-        loginCount: 'Login Count'
+        loginCount: 'Login Count',
+        setPassword: 'Set Password',
+        linkEmailPassword: 'Link Email & Password',
+        passwordSetSuccess: 'Password set successfully',
+        emailPasswordLinkedSuccess: 'Email and password linked successfully',
+        newPassword: 'New Password',
+        confirmPassword: 'Confirm Password'
   }
 };

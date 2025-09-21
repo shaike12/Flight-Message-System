@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from 'firebase/auth';
-import { onAuthStateChange, signIn, signUp, logout, getUserData, signInWithGoogle, handleGoogleRedirectResult, sendPhoneVerification, verifyPhoneCode, clearRecaptcha } from '../firebase/auth';
+import { onAuthStateChange, signIn, signUp, logout, getUserData, signInWithGoogle, handleGoogleRedirectResult, sendPhoneVerification, verifyPhoneCode, clearRecaptcha, setPasswordForGoogleAccount, linkEmailPasswordToGoogle } from '../firebase/auth';
 
 interface UserData {
   email?: string;
@@ -21,6 +21,8 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   sendPhoneVerification: (phoneNumber: string) => Promise<{ success: boolean; error?: string; confirmationResult?: any; message?: string }>;
   verifyPhoneCode: (confirmationResult: any, code: string) => Promise<{ success: boolean; error?: string }>;
+  setPasswordForGoogleAccount: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  linkEmailPasswordToGoogle: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -157,6 +159,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return result;
   };
 
+  const handleSetPasswordForGoogleAccount = async (newPassword: string) => {
+    const result = await setPasswordForGoogleAccount(newPassword);
+    return result;
+  };
+
+  const handleLinkEmailPasswordToGoogle = async (email: string, password: string) => {
+    const result = await linkEmailPasswordToGoogle(email, password);
+    return result;
+  };
+
   const handleLogout = async () => {
     const result = await logout();
     // Clear reCAPTCHA on logout
@@ -173,6 +185,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signInWithGoogle: handleSignInWithGoogle,
     sendPhoneVerification: handleSendPhoneVerification,
     verifyPhoneCode: handleVerifyPhoneCode,
+    setPasswordForGoogleAccount: handleSetPasswordForGoogleAccount,
+    linkEmailPasswordToGoogle: handleLinkEmailPasswordToGoogle,
     logout: handleLogout,
   };
 

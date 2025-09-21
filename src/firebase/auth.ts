@@ -12,7 +12,11 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
   PhoneAuthProvider,
-  signInWithCredential
+  signInWithCredential,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  linkWithCredential
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, getFirestore } from 'firebase/firestore';
 import app from './config';
@@ -261,5 +265,54 @@ export const clearRecaptcha = () => {
   if (recaptchaVerifier) {
     recaptchaVerifier.clear();
     recaptchaVerifier = null;
+  }
+};
+
+// Set password for Google account
+export const setPasswordForGoogleAccount = async (newPassword: string) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      return { success: false, error: 'אין משתמש מחובר' };
+    }
+
+    // Check if user has Google provider
+    const hasGoogleProvider = user.providerData.some(provider => provider.providerId === 'google.com');
+    if (!hasGoogleProvider) {
+      return { success: false, error: 'חשבון זה לא נוצר עם Google' };
+    }
+
+    // Update password
+    await updatePassword(user, newPassword);
+    
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+};
+
+// Link email/password to Google account
+export const linkEmailPasswordToGoogle = async (email: string, password: string) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      return { success: false, error: 'אין משתמש מחובר' };
+    }
+
+    // Check if user has Google provider
+    const hasGoogleProvider = user.providerData.some(provider => provider.providerId === 'google.com');
+    if (!hasGoogleProvider) {
+      return { success: false, error: 'חשבון זה לא נוצר עם Google' };
+    }
+
+    // Create email/password credential
+    const credential = EmailAuthProvider.credential(email, password);
+    
+    // Link the credential to the current user
+    await linkWithCredential(user, credential);
+    
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
   }
 };

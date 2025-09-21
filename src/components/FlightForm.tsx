@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useAppDispatch } from '../store/hooks';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchCities } from '../store/slices/citiesSlice';
 import { fetchTemplates } from '../store/slices/templatesSlice';
 import { fetchFlightRoutes } from '../store/slices/flightRoutesSlice';
-import { City, FlightRoute, MessageTemplate } from '../types';
+import { fetchCustomVariablesAsync } from '../store/slices/customVariablesSlice';
+import { City, FlightRoute, MessageTemplate, CustomVariable } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, addDoc } from 'firebase/firestore';
@@ -51,6 +52,9 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
+  // Get custom variables from Redux store
+  const { variables: customVariables } = useAppSelector((state) => state.customVariables);
+
   // Memoize props to prevent unnecessary re-renders
   const memoizedCities = useMemo(() => cities, [cities]);
   const memoizedFlightRoutes = useMemo(() => flightRoutes, [flightRoutes]);
@@ -66,7 +70,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     };
   }, []); // Empty dependency array - only calculate once
 
-  const [formData, setFormData] = useState(() => {
+  const [formData, setFormData] = useState<Record<string, any>>(() => {
     const now = new Date();
     const currentTime = now.toTimeString().slice(0, 5);
     const currentDate = now.toISOString().split('T')[0];
@@ -193,11 +197,53 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       setSelectedTemplate(savedTemplate);
     }
     
-    // Fetch cities, templates, and flight routes data
+    // Fetch cities, templates, flight routes, and custom variables data
     dispatch(fetchCities());
     dispatch(fetchTemplates());
     dispatch(fetchFlightRoutes());
+    dispatch(fetchCustomVariablesAsync());
   }, [dispatch]);
+
+  // Update formData when custom variables change
+  useEffect(() => {
+    if (customVariables && customVariables.length > 0) {
+      setFormData(prev => {
+        const newFormData = { ...prev };
+        
+        // Define existing form fields to avoid duplication
+        const existingFields = [
+          'flightNumber', 'newFlightNumber', 'originalTime', 'newTime', 
+          'originalDate', 'newDate', 'departureCity', 'arrivalCity', 
+          'loungeOpenTime', 'counterOpenTime', 'counterCloseTime', 'internetCode'
+        ];
+        
+        // Add only custom variables that are not already existing form fields
+        customVariables.forEach(variable => {
+          if (variable.isActive && 
+              !existingFields.includes(variable.name) && 
+              !(variable.name in newFormData)) {
+            // Set default value based on variable type
+            switch (variable.type) {
+              case 'time':
+                newFormData[variable.name] = new Date().toTimeString().slice(0, 5);
+                break;
+              case 'date':
+                newFormData[variable.name] = new Date().toISOString().split('T')[0];
+                break;
+              case 'number':
+                newFormData[variable.name] = '';
+                break;
+              default: // text
+                newFormData[variable.name] = '';
+                break;
+            }
+          }
+        });
+        
+        return newFormData;
+      });
+    }
+  }, [customVariables]);
 
   // Update current time every minute for local time display
   useEffect(() => {
@@ -385,7 +431,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     const formattedNewFlightNumber = formData.newFlightNumber ? `LY${formData.newFlightNumber.padStart(3, '0')}` : formattedFlightNumber;
 
     const templateContent = selectedTemplateData.content || '';
-    const hebrewText = templateContent
+    let hebrewText = templateContent
       .replace('{flightNumber}', formData.flightNumber ? formattedFlightNumber : '***')
       .replace('{newFlightNumber}', formData.newFlightNumber ? formattedNewFlightNumber : '***')
       .replace('{departureCity}', formData.departureCity ? departureCityName : '***')
@@ -398,6 +444,14 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       .replace('{counterOpenTime}', formData.counterOpenTime || '***')
       .replace('{counterCloseTime}', formData.counterCloseTime || '***')
       .replace('{internetCode}', formData.internetCode || '***');
+
+    // Replace custom variables in Hebrew template
+    customVariables?.forEach(variable => {
+      if (variable.isActive) {
+        const value = formData[variable.name] || '***';
+        hebrewText = hebrewText.replace(`{${variable.name}}`, value);
+      }
+    });
 
     // Generate English message
     const flightRoute = memoizedFlightRoutes.find(route => route.flightNumber === formData.flightNumber);
@@ -421,7 +475,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     };
 
     const englishTemplateContent = selectedTemplateData.englishContent || selectedTemplateData.content || '';
-    const englishText = englishTemplateContent
+    let englishText = englishTemplateContent
       .replace('{flightNumber}', formData.flightNumber ? formattedFlightNumber : '***')
       .replace('{newFlightNumber}', formData.newFlightNumber ? formattedNewFlightNumber : '***')
       .replace('{departureCity}', formData.departureCity ? departureCityNameEnglish : '***')
@@ -434,6 +488,14 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       .replace('{counterOpenTime}', formData.counterOpenTime || '***')
       .replace('{counterCloseTime}', formData.counterCloseTime || '***')
       .replace('{internetCode}', formData.internetCode || '***');
+
+    // Replace custom variables in English template
+    customVariables?.forEach(variable => {
+      if (variable.isActive) {
+        const value = formData[variable.name] || '***';
+        englishText = englishText.replace(`{${variable.name}}`, value);
+      }
+    });
 
     try {
       setGeneratedText(hebrewText);
@@ -1470,6 +1532,56 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                   />
                 </Box>
               </Box>
+
+              {/* Custom Variables Fields */}
+              {customVariables && customVariables.filter(variable => variable.isActive).length > 0 && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: '#667eea', fontWeight: 'bold' }}>
+                    {language === 'he' ? 'משתנים מותאמים אישית' : 'Custom Variables'}
+                  </Typography>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
+                    {customVariables
+                      .filter(variable => variable.isActive)
+                      .sort((a, b) => (a.order || 0) - (b.order || 0))
+                      .map((variable) => (
+                        <Box key={variable.id}>
+                          <TextField
+                            fullWidth
+                            label={language === 'he' ? variable.displayName : variable.displayNameEnglish}
+                            name={variable.name}
+                            value={formData[variable.name] || ''}
+                            onChange={handleInputChange}
+                            placeholder={language === 'he' ? variable.placeholder : variable.placeholderEnglish}
+                            type={variable.type === 'number' ? 'number' : variable.type === 'date' ? 'date' : variable.type === 'time' ? 'time' : 'text'}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: 2,
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: '#667eea',
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: '#667eea',
+                                },
+                              },
+                              '& .MuiInputBase-input': {
+                                textAlign: language === 'he' ? 'right' : 'left',
+                                direction: language === 'he' ? 'rtl' : 'ltr',
+                              },
+                              '& .MuiInputLabel-root': {
+                                textAlign: language === 'he' ? 'right' : 'left',
+                                direction: language === 'he' ? 'rtl' : 'ltr',
+                              },
+                              '& .MuiFormHelperText-root': {
+                                textAlign: language === 'he' ? 'right' : 'left',
+                                direction: language === 'he' ? 'rtl' : 'ltr',
+                              },
+                            }}
+                          />
+                        </Box>
+                      ))}
+                  </Box>
+                </Box>
+              )}
 
               {/* Clear Button */}
               <Box sx={{ mt: 6, display: 'flex', justifyContent: 'center' }}>

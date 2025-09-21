@@ -70,6 +70,7 @@ export interface CustomVariable {
   placeholder: string;
   placeholderEnglish: string;
   isActive: boolean;
+  order: number; // Field to control display order
   createdAt: string;
   updatedAt: string;
 }

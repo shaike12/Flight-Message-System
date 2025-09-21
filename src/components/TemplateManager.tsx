@@ -105,18 +105,38 @@ const TemplateManager: React.FC = () => {
     formData.isActive !== originalFormData.isActive
   ) : false;
 
-  // Available parameters for drag and drop - dynamic from database
-  const availableParameters = useMemo(() => 
-    customVariables
+  // Available parameters for drag and drop - includes both basic and custom variables
+  const availableParameters = useMemo(() => {
+    // Basic parameters that are always available
+    const basicParameters = [
+      { key: 'flightNumber', label: language === 'he' ? 'מספר טיסה' : 'Flight Number' },
+      { key: 'newFlightNumber', label: language === 'he' ? 'מספר טיסה חדש' : 'New Flight Number' },
+      { key: 'departureCity', label: language === 'he' ? 'עיר יציאה' : 'Departure City' },
+      { key: 'arrivalCity', label: language === 'he' ? 'עיר הגעה' : 'Arrival City' },
+      { key: 'originalDate', label: language === 'he' ? 'תאריך מקורי' : 'Original Date' },
+      { key: 'newDate', label: language === 'he' ? 'תאריך חדש' : 'New Date' },
+      { key: 'originalTime', label: language === 'he' ? 'שעה מקורית' : 'Original Time' },
+      { key: 'newTime', label: language === 'he' ? 'שעה חדשה' : 'New Time' },
+      { key: 'loungeOpenTime', label: language === 'he' ? 'שעת פתיחת לאונג\'' : 'Lounge Open Time' },
+      { key: 'counterOpenTime', label: language === 'he' ? 'שעת פתיחת דלפק' : 'Counter Open Time' },
+      { key: 'counterCloseTime', label: language === 'he' ? 'שעת סגירת דלפק' : 'Counter Close Time' },
+      { key: 'internetCode', label: language === 'he' ? 'קוד אינטרנט' : 'Internet Code' },
+    ];
+
+    // Custom variables from database
+    const customParameters = customVariables
       .filter(variable => variable.isActive)
       .map(variable => ({
         key: variable.name,
         label: language === 'he' ? variable.displayName : variable.displayNameEnglish
-      })), [customVariables, language]
-  );
+      }));
+
+    // Combine both arrays
+    return [...basicParameters, ...customParameters];
+  }, [customVariables, language]);
 
   const handleDragStart = (e: React.DragEvent, parameter: string) => {
-    e.dataTransfer.setData('text/plain', `{${parameter}}`);
+    e.dataTransfer.setData('text/plain', parameter);
     setIsDragging(true);
   };
 

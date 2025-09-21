@@ -464,7 +464,7 @@ const UserManagement: React.FC = () => {
               </FormControl>
               <Button
                 variant="outlined"
-                startIcon={<RefreshCw size={16} />}
+                startIcon={<RefreshCw size={16} style={{ marginLeft: '8px'}} />}
                 onClick={() => window.location.reload()}
                 sx={{ ml: 'auto' }}
               >
@@ -472,7 +472,7 @@ const UserManagement: React.FC = () => {
               </Button>
               <Button
                 variant="outlined"
-                startIcon={<UserPlus size={16} />}
+                startIcon={<UserPlus size={16} style={{ marginLeft: '8px'}} />}
                 sx={{ ml: 1 }}
               >
                 {t.userManagement.addUser}
@@ -519,15 +519,50 @@ const UserManagement: React.FC = () => {
                           label={user.isOnline ? t.userManagement.connected : t.userManagement.disconnected}
                           color={user.isOnline ? 'success' : 'default'}
                           size="small"
-                          icon={user.isOnline ? <LogIn size={12} /> : <LogOut size={12} />}
+                          icon={user.isOnline ? <LogIn size={14} /> : <LogOut size={14} />}
+                          sx={{
+                            backgroundColor: user.isOnline ? '#4caf50' : '#757575',
+                            color: 'white',
+                            '& .MuiChip-label': {
+                              color: 'white',
+                              fontWeight: 'bold',
+                              fontSize: '0.75rem'
+                            },
+                            '& .MuiChip-icon': {
+                              color: 'white',
+                              fontSize: '14px',
+                              marginLeft: '4px',
+                              marginRight: '4px'
+                            }
+                          }}
                         />
                       </TableCell>
                       <TableCell sx={{ textAlign: 'center' }}>
                         <Chip
                           label={user.role === 'admin' ? t.userManagement.admin : t.userManagement.user}
                           color={user.role === 'admin' ? 'primary' : 'secondary'}
-                          size="small"
-                          icon={<Shield size={12} />}
+                          size="medium"
+                          icon={<Shield size={14} />}
+                          
+                          sx={{
+                            backgroundColor: user.role === 'admin' ? '#1976d2' : '#9c27b0',
+                            color: 'white',
+                            height: '32px',
+                            '& .MuiChip-label': {
+                              color: 'white',
+                              fontWeight: 'bold',
+                              fontSize: '0.75rem',
+                              fontFamily: 'inherit',
+                              direction: 'rtl',
+                              unicodeBidi: 'bidi-override'
+                            },
+                            '& .MuiChip-icon': {
+                              color: 'white',
+                              fontSize: '14px',
+                              marginLeft: '4px',
+                              marginRight: '4px'
+                            }
+                          }}
                         />
                       </TableCell>
                       <TableCell sx={{ textAlign: 'center' }}>
@@ -712,7 +747,21 @@ const UserManagement: React.FC = () => {
                     label={selectedUser.role === 'admin' ? t.userManagement.admin : t.userManagement.user}
                     color={selectedUser.role === 'admin' ? 'primary' : 'secondary'}
                     size="small"
-                    icon={<Shield size={12} />}
+                    icon={<Shield size={14} />}
+                    sx={{
+                      backgroundColor: selectedUser.role === 'admin' ? '#1976d2' : '#9c27b0',
+                      color: 'white',
+                      '& .MuiChip-label': {
+                        color: 'white',
+                        fontWeight: 'bold'
+                      },
+                      '& .MuiChip-icon': {
+                        color: 'white',
+                        fontSize: '14px',
+                        marginLeft: '4px',
+                        marginRight: '4px'
+                      }
+                    }}
                   />
                 </Box>
                 
@@ -724,7 +773,22 @@ const UserManagement: React.FC = () => {
                     label={selectedUser.isOnline ? t.userManagement.connected : t.userManagement.disconnected}
                     color={selectedUser.isOnline ? 'success' : 'default'}
                     size="small"
-                    icon={selectedUser.isOnline ? <LogIn size={12} /> : <LogOut size={12} />}
+                    icon={selectedUser.isOnline ? <LogIn size={14} /> : <LogOut size={14} />}
+                    sx={{
+                      backgroundColor: selectedUser.isOnline ? '#4caf50' : '#757575',
+                      color: 'white',
+                      '& .MuiChip-label': {
+                        color: 'white',
+                        fontWeight: 'bold'
+                      },
+                      '& .MuiChip-icon': {
+                        color: 'white',
+                        fontSize: '12px',
+                        marginLeft: '4px',
+                        marginRight: '4px',
+                        
+                      }
+                    }}
                   />
                 </Box>
                 
@@ -748,7 +812,7 @@ const UserManagement: React.FC = () => {
                 
                 <Box>
                   <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                    {t.userManagement.loginCount || 'מספר התחברויות'}:
+                    {t.userManagement.loginCount}:
                   </Typography>
                   <Typography variant="body2">
                     {selectedUser.loginCount || 0}

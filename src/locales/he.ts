@@ -312,6 +312,7 @@ export const he = {
     userType: 'סוג משתמש',
     all: 'הכל',
     admin: 'מנהל',
+    user: 'משתמש',
     addUser: 'הוסף משתמש',
     status: 'סטטוס',
     role: 'תפקיד',
@@ -340,6 +341,12 @@ export const he = {
         viewUser: 'פרטי משתמש',
         close: 'סגור',
         phoneNumber: 'טלפון',
-        loginCount: 'מספר התחברויות'
+        loginCount: 'מספר התחברויות',
+        setPassword: 'הגדר סיסמה',
+        linkEmailPassword: 'קשר אימייל וסיסמה',
+        passwordSetSuccess: 'סיסמה הוגדרה בהצלחה',
+        emailPasswordLinkedSuccess: 'אימייל וסיסמה קושרו בהצלחה',
+        newPassword: 'סיסמה חדשה',
+        confirmPassword: 'אשר סיסמה'
   }
 };
