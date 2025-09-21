@@ -36,7 +36,10 @@ import {
   useTheme, 
   useMediaQuery,
   Autocomplete,
-  Popover
+  Popover,
+  Modal,
+  Fade,
+  Backdrop
 } from '@mui/material';
 
 interface FlightFormProps {
@@ -101,6 +104,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   const [copyButtonRef, setCopyButtonRef] = useState<HTMLButtonElement | null>(null);
   const [autoFillStatus, setAutoFillStatus] = useState<{type: 'success' | 'error' | null, message: string}>({type: null, message: ''});
   const [showAddRouteButton, setShowAddRouteButton] = useState(false);
+  const [showFrenchWarning, setShowFrenchWarning] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentTimeState, setCurrentTimeState] = useState(new Date());
@@ -166,10 +170,55 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   // Copy English text
   const copyEnglishText = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     if (generatedEnglishText) {
-      const buttonElement = e.currentTarget;
-      handleCopyToClipboard(generatedEnglishText, buttonElement);
+      // Find the flight route to check if it's French
+      const flightRoute = memoizedFlightRoutes.find(route => route.flightNumber === formData.flightNumber);
+      
+      // Debug logging
+      console.log('🔍 DEBUG - Copy English Text:');
+      console.log('  - Flight Number:', formData.flightNumber);
+      console.log('  - Found Flight Route:', flightRoute);
+      console.log('  - Departure City (form):', formData.departureCity);
+      console.log('  - Arrival City (form):', formData.arrivalCity);
+      console.log('  - Departure City French (DB):', flightRoute?.departureCityFrench);
+      console.log('  - Arrival City French (DB):', flightRoute?.arrivalCityFrench);
+      
+      // Check if flight is to/from French destination using the database
+      const isFrenchDestination = flightRoute?.arrivalCityFrench && flightRoute.arrivalCityFrench.trim() !== '';
+      const isFrenchDeparture = flightRoute?.departureCityFrench && flightRoute.departureCityFrench.trim() !== '';
+
+      // Also check form fields and flight route for French cities (fallback)
+      const frenchCities = ['paris', 'lyon', 'marseille', 'nice', 'toulouse', 'nantes', 'strasbourg', 'montpellier', 'bordeaux', 'lille'];
+      const frenchCityCodes = ['cdg', 'ory', 'lys', 'mrs', 'nce', 'tls', 'nte', 'sxb', 'mpl', 'bod', 'lil'];
+      
+      const isFrenchCityInForm = frenchCities.some(city => 
+        formData.departureCity?.toLowerCase().includes(city) || 
+        formData.arrivalCity?.toLowerCase().includes(city) ||
+        flightRoute?.departureCityEnglish?.toLowerCase().includes(city) ||
+        flightRoute?.arrivalCityEnglish?.toLowerCase().includes(city)
+      );
+      
+      const isFrenchCityCode = frenchCityCodes.some(code => 
+        formData.departureCity?.toLowerCase().includes(code) || 
+        formData.arrivalCity?.toLowerCase().includes(code) ||
+        flightRoute?.departureCity?.toLowerCase().includes(code) ||
+        flightRoute?.arrivalCity?.toLowerCase().includes(code)
+      );
+
+      console.log('  - Is French Destination (DB):', isFrenchDestination);
+      console.log('  - Is French Departure (DB):', isFrenchDeparture);
+      console.log('  - Is French City in Form:', isFrenchCityInForm);
+      console.log('  - Is French City Code:', isFrenchCityCode);
+
+      if (isFrenchDestination || isFrenchDeparture || isFrenchCityInForm || isFrenchCityCode) {
+        console.log('  - Showing French warning!');
+        setShowFrenchWarning(true);
+      } else {
+        console.log('  - Copying directly (no French warning)');
+        const buttonElement = e.currentTarget;
+        handleCopyToClipboard(generatedEnglishText, buttonElement);
+      }
     }
-  }, [generatedEnglishText, handleCopyToClipboard]);
+  }, [generatedEnglishText, handleCopyToClipboard, formData.flightNumber, memoizedFlightRoutes]);
 
   // Copy French text
   const copyFrenchText = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
@@ -2246,6 +2295,100 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
         </Box>,
         (copyButtonRef.offsetParent as Element) || document.body
       )}
+
+      {/* French Warning Dialog */}
+      <Modal
+        open={showFrenchWarning}
+        onClose={() => setShowFrenchWarning(false)}
+        closeAfterTransition
+        disableEnforceFocus
+        BackdropComponent={Backdrop}
+        BackdropProps={{
+          timeout: 500,
+          sx: {
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(8px)',
+          }
+        }}
+      >
+        <Fade in={showFrenchWarning}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: { xs: '90%', sm: 400 },
+              bgcolor: 'background.paper',
+              borderRadius: 3,
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+              p: 0,
+              outline: 'none',
+            }}
+          >
+            {/* Header */}
+            <Box
+              sx={{
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                color: 'white',
+                p: 3,
+                borderRadius: '12px 12px 0 0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                ⚠️ {language === 'he' ? 'שים לב' : 'Attention'}
+              </Typography>
+            </Box>
+
+            {/* Content */}
+            <Box sx={{ p: 4 }}>
+              <Typography variant="body1" sx={{ 
+                mb: 3,
+                lineHeight: 1.6,
+                color: 'text.primary',
+                direction: language === 'he' ? 'rtl' : 'ltr',
+                textAlign: 'center'
+              }}>
+                {language === 'he' 
+                  ? 'שים לב, יש לשלוח את ההודעה בעברית ובצרפתית'
+                  : 'Please note, you should send the message in Hebrew and French'
+                }
+              </Typography>
+
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    setShowFrenchWarning(false);
+                    // Copy the English text after confirmation
+                    if (generatedEnglishText) {
+                      navigator.clipboard.writeText(generatedEnglishText);
+                    }
+                  }}
+                  sx={{
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: 'white',
+                    borderRadius: 2,
+                    px: 3,
+                    py: 1,
+                    fontWeight: 'bold',
+                    textTransform: 'none',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #0ea472 0%, #047857 100%)',
+                    }
+                  }}
+                >
+                  {language === 'he' ? 'אישור' : 'OK'}
+                </Button>
+              </Box>
+            </Box>
+          </Box>
+        </Fade>
+      </Modal>
     </Box>
   );
 };

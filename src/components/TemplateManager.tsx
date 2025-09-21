@@ -54,6 +54,7 @@ const TemplateManager: React.FC = () => {
     frenchContent: string;
     isActive: boolean;
   } | null>(null);
+  const [showFrenchWarning, setShowFrenchWarning] = useState(false);
 
   // Filter templates based on search term
   const filteredTemplates = templates.filter(template =>
