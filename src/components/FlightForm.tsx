@@ -562,9 +562,11 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       }
     });
 
-    // Generate French message
-    const frenchTemplateContent = selectedTemplateData.frenchContent || selectedTemplateData.englishContent || selectedTemplateData.content || '';
-    let frenchText = frenchTemplateContent
+    // Generate French message only if frenchContent exists
+    let frenchText = '';
+    if (selectedTemplateData.frenchContent) {
+      const frenchTemplateContent = selectedTemplateData.frenchContent;
+      frenchText = frenchTemplateContent
       .replace('{flightNumber}', formData.flightNumber ? formattedFlightNumber : '***')
       .replace('{newFlightNumber}', formData.newFlightNumber ? formattedNewFlightNumber : '***')
       .replace('{departureCity}', formData.departureCity ? departureCityNameEnglish : '***')
@@ -578,13 +580,14 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       .replace('{counterCloseTime}', formData.counterCloseTime || '***')
       .replace('{internetCode}', formData.internetCode || '***');
 
-    // Replace custom variables in French template
-    customVariables?.forEach(variable => {
-      if (variable.isActive) {
-        const value = formData[variable.name] || '***';
-        frenchText = frenchText.replace(`{${variable.name}}`, value);
-      }
-    });
+      // Replace custom variables in French template
+      customVariables?.forEach(variable => {
+        if (variable.isActive) {
+          const value = formData[variable.name] || '***';
+          frenchText = frenchText.replace(`{${variable.name}}`, value);
+        }
+      });
+    }
 
     try {
       setGeneratedText(hebrewText);

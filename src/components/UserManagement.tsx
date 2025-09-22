@@ -95,6 +95,13 @@ const UserManagement: React.FC = () => {
     role: 'user' as 'admin' | 'user'
   });
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [addUserFormData, setAddUserFormData] = useState({
+    displayName: '',
+    email: '',
+    password: '',
+    role: 'user' as 'admin' | 'user'
+  });
 
   // Load real data from Firestore
   useEffect(() => {
@@ -280,6 +287,61 @@ const UserManagement: React.FC = () => {
       hour: '2-digit',
       minute: '2-digit'
     }).format(dateObj);
+  };
+
+  const handleAddUser = () => {
+    setAddUserFormData({
+      displayName: '',
+      email: '',
+      password: '',
+      role: 'user'
+    });
+    setAddUserDialogOpen(true);
+  };
+
+  const handleSaveNewUser = async () => {
+    try {
+      // Import Firebase Auth functions
+      const { createUserWithEmailAndPassword } = await import('firebase/auth');
+      const { setDoc, doc } = await import('firebase/firestore');
+      const { auth, db } = await import('../firebase/auth');
+      
+      // Create user with email and password
+      const userCredential = await createUserWithEmailAndPassword(
+        auth, 
+        addUserFormData.email, 
+        addUserFormData.password
+      );
+      
+      // Save additional user data to Firestore
+      await setDoc(doc(db, 'users', userCredential.user.uid), {
+        email: addUserFormData.email,
+        name: addUserFormData.displayName,
+        role: addUserFormData.role,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+        loginCount: 1,
+        isOnline: true
+      });
+      
+      // Close dialog and refresh data
+      setAddUserDialogOpen(false);
+      window.location.reload();
+      
+    } catch (error: any) {
+      console.error('Error adding user:', error);
+      alert(`שגיאה בהוספת משתמש: ${error.message}`);
+    }
+  };
+
+  const handleCancelAddUser = () => {
+    setAddUserDialogOpen(false);
+    setAddUserFormData({
+      displayName: '',
+      email: '',
+      password: '',
+      role: 'user'
+    });
   };
 
   if (loading) {
@@ -474,6 +536,7 @@ const UserManagement: React.FC = () => {
                 variant="outlined"
                 startIcon={<UserPlus size={16} style={{ marginLeft: '8px'}} />}
                 sx={{ ml: 1 }}
+                onClick={handleAddUser}
               >
                 {t.userManagement.addUser}
               </Button>
@@ -851,6 +914,61 @@ const UserManagement: React.FC = () => {
           <Button onClick={() => setDeleteDialogOpen(false)}>{t.userManagement.cancel}</Button>
           <Button onClick={handleDeleteConfirm} color="error" variant="contained">
             {t.userManagement.delete}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Add User Dialog */}
+      <Dialog open={addUserDialogOpen} onClose={handleCancelAddUser} maxWidth="sm" fullWidth>
+        <DialogTitle>הוסף משתמש חדש</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <TextField
+              fullWidth
+              label="שם מלא"
+              value={addUserFormData.displayName}
+              onChange={(e) => setAddUserFormData({ ...addUserFormData, displayName: e.target.value })}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="אימייל"
+              type="email"
+              value={addUserFormData.email}
+              onChange={(e) => setAddUserFormData({ ...addUserFormData, email: e.target.value })}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="סיסמה"
+              type="password"
+              value={addUserFormData.password}
+              onChange={(e) => setAddUserFormData({ ...addUserFormData, password: e.target.value })}
+              sx={{ mb: 2 }}
+            />
+            <FormControl fullWidth>
+              <InputLabel>תפקיד</InputLabel>
+              <Select
+                value={addUserFormData.role}
+                onChange={(e) => setAddUserFormData({ ...addUserFormData, role: e.target.value as 'admin' | 'user' })}
+                label="תפקיד"
+              >
+                <MenuItem value="user">משתמש</MenuItem>
+                <MenuItem value="admin">מנהל</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelAddUser}>
+            ביטול
+          </Button>
+          <Button 
+            onClick={handleSaveNewUser} 
+            variant="contained"
+            disabled={!addUserFormData.displayName || !addUserFormData.email || !addUserFormData.password}
+          >
+            הוסף משתמש
           </Button>
         </DialogActions>
       </Dialog>
