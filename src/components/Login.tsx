@@ -579,6 +579,7 @@ const Login: React.FC = () => {
                         <IconButton
                           onClick={() => setShowPassword(!showPassword)}
                           edge="end"
+                          tabIndex={-1}
                         >
                           {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                         </IconButton>
@@ -618,6 +619,7 @@ const Login: React.FC = () => {
                           <IconButton
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             edge="end"
+                            tabIndex={-1}
                           >
                             {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                           </IconButton>

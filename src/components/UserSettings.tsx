@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 
 const UserSettings: React.FC = () => {
-  const { userData, user } = useAuth();
+  const { userData, user, updateUserName } = useAuth();
   const { t } = useLanguage();
   
   // Password change states
@@ -51,6 +51,10 @@ const UserSettings: React.FC = () => {
   const [confirmSetupPassword, setConfirmSetupPassword] = useState('');
   const [showSetupPassword, setShowSetupPassword] = useState(false);
   const [showConfirmSetupPassword, setShowConfirmSetupPassword] = useState(false);
+  
+  // Name change states
+  const [newName, setNewName] = useState(userData?.name || '');
+  const [isChangingName, setIsChangingName] = useState(false);
   
   // UI states
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -134,6 +138,35 @@ const UserSettings: React.FC = () => {
     }
   };
 
+  const handleNameChange = async () => {
+    if (!newName.trim()) {
+      setMessage({ type: 'error', text: 'אנא הכנס שם תקין' });
+      return;
+    }
+
+    if (newName === userData?.name) {
+      setMessage({ type: 'error', text: 'השם זהה לשם הנוכחי' });
+      return;
+    }
+
+    setIsChangingName(true);
+    setMessage(null);
+
+    try {
+      const result = await updateUserName(newName.trim());
+      
+      if (result.success) {
+        setMessage({ type: 'success', text: 'השם עודכן בהצלחה' });
+      } else {
+        setMessage({ type: 'error', text: result.error || 'שגיאה בעדכון השם' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'שגיאה לא צפויה' });
+    } finally {
+      setIsChangingName(false);
+    }
+  };
+
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
       <Typography variant="h4" sx={{ 
@@ -187,6 +220,65 @@ const UserSettings: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Name Change Section */}
+      <Card sx={{ mb: 3 }}>
+        <CardHeader
+          title={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <User size={24} color="#667eea" />
+              <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                שינוי שם
+              </Typography>
+            </Box>
+          }
+          subheader="שנה את השם שלך"
+        />
+        <CardContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <TextField
+              fullWidth
+              label="שם חדש"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="הכנס את השם החדש שלך"
+              variant="outlined"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <User size={20} color="#666" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'primary.main',
+                  },
+                },
+              }}
+            />
+            
+            <Button
+              variant="contained"
+              onClick={handleNameChange}
+              disabled={isChangingName}
+              sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                },
+                py: 1.5,
+                fontSize: '1rem',
+                fontWeight: 'bold'
+              }}
+            >
+              {isChangingName ? 'משנה שם...' : 'שנה שם'}
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+
       {/* Message Display */}
       {message && (
         <Alert 
@@ -233,6 +325,7 @@ const UserSettings: React.FC = () => {
                         onClick={() => setShowSetupPassword(!showSetupPassword)}
                         edge="end"
                         size="small"
+                        tabIndex={-1}
                       >
                         {showSetupPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </IconButton>
@@ -260,6 +353,7 @@ const UserSettings: React.FC = () => {
                         onClick={() => setShowConfirmSetupPassword(!showConfirmSetupPassword)}
                         edge="end"
                         size="small"
+                        tabIndex={-1}
                       >
                         {showConfirmSetupPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </IconButton>
@@ -323,6 +417,7 @@ const UserSettings: React.FC = () => {
                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                         edge="end"
                         size="small"
+                        tabIndex={-1}
                       >
                         {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </IconButton>
@@ -349,6 +444,7 @@ const UserSettings: React.FC = () => {
                         onClick={() => setShowNewPassword(!showNewPassword)}
                         edge="end"
                         size="small"
+                        tabIndex={-1}
                       >
                         {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </IconButton>
@@ -376,6 +472,7 @@ const UserSettings: React.FC = () => {
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         edge="end"
                         size="small"
+                        tabIndex={-1}
                       >
                         {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </IconButton>

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from 'firebase/auth';
-import { onAuthStateChange, signIn, signUp, logout, getUserData, signInWithGoogle, handleGoogleRedirectResult, sendPhoneVerification, verifyPhoneCode, clearRecaptcha, setPasswordForGoogleAccount, linkEmailPasswordToGoogle, sendPasswordReset, changeUserPassword } from '../firebase/auth';
+import { onAuthStateChange, signIn, signUp, logout, getUserData, signInWithGoogle, handleGoogleRedirectResult, sendPhoneVerification, verifyPhoneCode, clearRecaptcha, setPasswordForGoogleAccount, linkEmailPasswordToGoogle, sendPasswordReset, changeUserPassword, updateUserName, updateUserRole } from '../firebase/auth';
 
 interface UserData {
   email?: string;
@@ -25,6 +25,8 @@ interface AuthContextType {
   linkEmailPasswordToGoogle: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   changeUserPassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   sendPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
+  updateUserName: (newName: string) => Promise<{ success: boolean; error?: string }>;
+  updateUserRole: (userId: string, newRole: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -201,6 +203,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return result;
   };
 
+  const handleUpdateUserName = async (newName: string) => {
+    const result = await updateUserName(newName);
+    if (result.success && user) {
+      // Refresh user data after successful update
+      const updatedUserData = await getUserData(user.uid);
+      if (updatedUserData && updatedUserData.success && updatedUserData.data) {
+        setUserData(updatedUserData.data as UserData);
+      }
+    }
+    return result;
+  };
+
+  const handleUpdateUserRole = async (userId: string, newRole: string) => {
+    const result = await updateUserRole(userId, newRole);
+    return result;
+  };
+
   const handleLogout = async () => {
     const result = await logout();
     // Clear reCAPTCHA on logout
@@ -221,6 +240,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     linkEmailPasswordToGoogle: handleLinkEmailPasswordToGoogle,
     changeUserPassword: handleChangeUserPassword,
     sendPasswordReset: handleSendPasswordReset,
+    updateUserName: handleUpdateUserName,
+    updateUserRole: handleUpdateUserRole,
     logout: handleLogout,
   };
 

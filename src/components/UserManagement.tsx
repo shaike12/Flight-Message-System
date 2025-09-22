@@ -47,6 +47,7 @@ import {
   Search,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { getAvatarColor, getUserInitials } from '../utils/avatarUtils';
@@ -79,6 +80,7 @@ interface LoginHistory {
 
 const UserManagement: React.FC = () => {
   const { t } = useLanguage();
+  const { updateUserRole } = useAuth();
 
   const [activeTab, setActiveTab] = useState(0);
   const [users, setUsers] = useState<UserData[]>([]);
@@ -201,6 +203,19 @@ const UserManagement: React.FC = () => {
     if (!selectedUser) return;
     
     try {
+      // Check if role changed
+      const roleChanged = selectedUser.role !== editFormData.role;
+      
+      if (roleChanged) {
+        // Use the new updateUserRole function for role changes
+        const result = await updateUserRole(selectedUser.id, editFormData.role);
+        if (!result.success) {
+          alert(`שגיאה בעדכון התפקיד: ${result.error}`);
+          return;
+        }
+      }
+      
+      // Update other fields using Firestore directly
       const userRef = doc(db, 'users', selectedUser.id);
       await updateDoc(userRef, {
         displayName: editFormData.displayName,
@@ -239,8 +254,13 @@ const UserManagement: React.FC = () => {
         email: '',
         role: 'user'
       });
+      
+      if (roleChanged) {
+        alert('התפקיד עודכן בהצלחה!');
+      }
     } catch (error) {
       console.error('Error updating user:', error);
+      alert('שגיאה בעדכון המשתמש');
     }
   };
 

@@ -106,16 +106,6 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, callback);
 };
 
-export const updateUserRole = async (uid: string, newRole: string) => {
-  try {
-    await setDoc(doc(db, 'users', uid), {
-      role: newRole
-    }, { merge: true });
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-};
 
 export const addMissingRoleField = async (uid: string, role: string = 'user') => {
   try {
@@ -389,6 +379,50 @@ export const sendPasswordReset = async (email: string) => {
     } else if (error.code === 'auth/too-many-requests') {
       return { success: false, error: 'יותר מדי בקשות. נסה שוב מאוחר יותר' };
     }
+    return { success: false, error: error.message };
+  }
+};
+
+// Update user name
+export const updateUserName = async (newName: string) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      return { success: false, error: 'אין משתמש מחובר' };
+    }
+
+    // Update name in Firestore
+    await setDoc(doc(db, 'users', user.uid), {
+      name: newName
+    }, { merge: true });
+    
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+};
+
+// Update user role (admin only)
+export const updateUserRole = async (userId: string, newRole: string) => {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      return { success: false, error: 'אין משתמש מחובר' };
+    }
+
+    // Check if current user is admin
+    const currentUserDoc = await getDoc(doc(db, 'users', currentUser.uid));
+    if (!currentUserDoc.exists() || currentUserDoc.data()?.role !== 'admin') {
+      return { success: false, error: 'אין הרשאה לבצע פעולה זו' };
+    }
+
+    // Update role in Firestore
+    await setDoc(doc(db, 'users', userId), {
+      role: newRole
+    }, { merge: true });
+    
+    return { success: true };
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 };
