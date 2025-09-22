@@ -2,6 +2,9 @@
   "name": "flight-message-system",
   "version": "0.1.0",
   "private": true,
+  "author": "Shai Shmuel",
+  "license": "MIT",
+  "copyright": "© 2024 Shai Shmuel. All rights reserved.",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",

@@ -1,3 +1,10 @@
+/**
+ * Flight Message System - Firebase Configuration
+ * © 2024 Shai Shmuel. All rights reserved.
+ * 
+ * Firebase configuration and initialization.
+ */
+
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';

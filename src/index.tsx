@@ -1,3 +1,10 @@
+/**
+ * Flight Message System - Main Entry Point
+ * © 2024 Shai Shmuel. All rights reserved.
+ * 
+ * Application entry point and theme configuration.
+ */
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';

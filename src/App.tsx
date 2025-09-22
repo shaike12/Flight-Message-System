@@ -1,3 +1,10 @@
+/**
+ * Flight Message System
+ * © 2024 Shai Shmuel. All rights reserved.
+ * 
+ * A professional flight message management system built with React, Firebase, and Material UI.
+ */
+
 import React from 'react';
 import { Provider } from 'react-redux';
 import { store } from './store';

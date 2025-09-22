@@ -2,6 +2,8 @@
 
 A professional flight message management system built with React, Firebase, and Material UI.
 
+**© 2024 Shai Shmuel. All rights reserved.**
+
 ## Features
 
 - 🛫 **Flight Message Generation**: Create and manage flight delay/cancellation messages

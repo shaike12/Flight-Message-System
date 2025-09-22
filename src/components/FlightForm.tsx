@@ -1,3 +1,10 @@
+/**
+ * Flight Message System - Flight Form Component
+ * © 2024 Shai Shmuel. All rights reserved.
+ * 
+ * Main form component for creating and managing flight messages.
+ */
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';

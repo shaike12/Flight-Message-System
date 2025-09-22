@@ -1,3 +1,10 @@
+/**
+ * Flight Message System - Timezone Service
+ * © 2024 Shai Shmuel. All rights reserved.
+ * 
+ * Service for handling timezone conversions and local time calculations.
+ */
+
 import moment from 'moment-timezone';
 
 // Cache for timezone lookups to avoid repeated API calls
