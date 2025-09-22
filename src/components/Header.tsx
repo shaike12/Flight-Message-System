@@ -231,6 +231,18 @@ const Header: React.FC = () => {
             >
               מערכת הודעות טיסות
             </Typography>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: 'text.secondary',
+                fontSize: { xs: '0.6rem', sm: '0.65rem' },
+                fontWeight: 'normal',
+                opacity: 0.6,
+                display: { xs: 'none', sm: 'block' }
+              }}
+            >
+              © 2024 Shai Shmuel
+            </Typography>
           </Box>
         </Box>
 

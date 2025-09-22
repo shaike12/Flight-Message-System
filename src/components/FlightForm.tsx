@@ -1774,7 +1774,25 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 borderBottom: '1px solid rgba(0, 0, 0, 0.08)'
               }}
             />
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ 
+              p: 3,
+              maxHeight: '70vh',
+              overflowY: 'auto',
+              '&::-webkit-scrollbar': {
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: 'rgba(0, 0, 0, 0.05)',
+                borderRadius: '4px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '4px',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                },
+              },
+            }}>
           {/* Template Selection */}
               <Box sx={{ mb: 3 }}>
                 <Autocomplete
