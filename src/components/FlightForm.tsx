@@ -928,7 +928,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
 
   return (
     <Box sx={{ maxWidth: '100%', mx: 'auto' }}>
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 3 }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 3, alignItems: 'stretch' }}>
         {/* Form Section */}
         <Box sx={{ flex: 1 }}>
           <Card
@@ -939,7 +939,9 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
               border: '1px solid rgba(0, 0, 0, 0.08)',
               borderRadius: 3,
               overflow: 'hidden',
-              height: 'fit-content'
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
             <CardHeader
@@ -984,7 +986,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 borderBottom: '1px solid rgba(0, 0, 0, 0.08)'
               }}
             />
-            <CardContent sx={{ p: 3 }}>
+            <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
               {/* Status Messages */}
               {autoFillStatus.type && (
                 <Alert 
@@ -1729,7 +1731,9 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
               border: '1px solid rgba(0, 0, 0, 0.08)',
               borderRadius: 3,
               overflow: 'hidden',
-              height: 'fit-content'
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
             <CardHeader
@@ -1774,7 +1778,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 borderBottom: '1px solid rgba(0, 0, 0, 0.08)'
               }}
             />
-            <CardContent sx={{ p: 0, display: 'flex', flexDirection: 'column', height: '70vh' }}>
+            <CardContent sx={{ p: 0, display: 'flex', flexDirection: 'column', flex: 1 }}>
               {/* Fixed Template Selection Header */}
               <Box sx={{ 
                 p: 3, 
@@ -1841,7 +1845,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
 
               {/* Scrollable Content Area */}
               <Box sx={{ 
-                flex: 1,
+                maxHeight: '60vh',
                 overflowY: 'auto',
                 p: 3,
                 '&::-webkit-scrollbar': {
