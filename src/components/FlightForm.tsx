@@ -1774,27 +1774,16 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 borderBottom: '1px solid rgba(0, 0, 0, 0.08)'
               }}
             />
-            <CardContent sx={{ 
-              p: 3,
-              maxHeight: '70vh',
-              overflowY: 'auto',
-              '&::-webkit-scrollbar': {
-                width: '8px',
-              },
-              '&::-webkit-scrollbar-track': {
-                background: 'rgba(0, 0, 0, 0.05)',
-                borderRadius: '4px',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                borderRadius: '4px',
-                '&:hover': {
-                  background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                },
-              },
-            }}>
-          {/* Template Selection */}
-              <Box sx={{ mb: 3 }}>
+            <CardContent sx={{ p: 0, display: 'flex', flexDirection: 'column', height: '70vh' }}>
+              {/* Fixed Template Selection Header */}
+              <Box sx={{ 
+                p: 3, 
+                borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+                background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.02) 0%, rgba(118, 75, 162, 0.02) 100%)',
+                flexShrink: 0
+              }}>
+                {/* Template Selection */}
+                <Box sx={{ mb: 0 }}>
                 <Autocomplete
                   fullWidth
                   options={memoizedTemplates.filter(t => t.isActive)}
@@ -1847,9 +1836,30 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                   selectOnFocus
                   handleHomeEndKeys
                 />
+                </Box>
               </Box>
-            
-              {/* Error Display */}
+
+              {/* Scrollable Content Area */}
+              <Box sx={{ 
+                flex: 1,
+                overflowY: 'auto',
+                p: 3,
+                '&::-webkit-scrollbar': {
+                  width: '8px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'rgba(0, 0, 0, 0.05)',
+                  borderRadius: '4px',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '4px',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                  },
+                },
+              }}>
+                {/* Error Display */}
               {error && (
                 <Alert 
                   severity="error"
@@ -2114,6 +2124,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                   </Typography>
                 </Alert>
               )}
+              </Box>
             </CardContent>
           </Card>
         </Box>
