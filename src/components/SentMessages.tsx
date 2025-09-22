@@ -1,14 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useAppSelector } from '../store/hooks';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, orderBy } from 'firebase/firestore';
+import { updateDoc, deleteDoc, doc, getDocs, query, orderBy, collection } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { 
   Box, 
   Card, 
   CardContent, 
-  CardHeader, 
   Typography, 
   Table, 
   TableBody, 
@@ -34,7 +32,6 @@ import {
   Divider
 } from '@mui/material';
 import { 
-  Send, 
   Eye, 
   Edit, 
   Trash2, 
@@ -45,8 +42,7 @@ import {
   Plane,
   MapPin,
   Download,
-  Search,
-  X
+  Search
 } from 'lucide-react';
 
 interface SentMessage {
@@ -91,7 +87,7 @@ const SentMessages: React.FC = () => {
         
         const messages: SentMessage[] = [];
         querySnapshot.forEach((doc) => {
-          messages.push({ id: doc.id, ...doc.data() } as SentMessage);
+          messages.push({ id: doc.id, ...(doc.data() as Omit<SentMessage, 'id'>) });
         });
         
         setSentMessages(messages);

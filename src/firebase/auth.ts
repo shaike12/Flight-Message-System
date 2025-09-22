@@ -11,11 +11,8 @@ import {
   getRedirectResult,
   RecaptchaVerifier,
   signInWithPhoneNumber,
-  PhoneAuthProvider,
-  signInWithCredential,
   updatePassword,
   EmailAuthProvider,
-  reauthenticateWithCredential,
   linkWithCredential
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, getFirestore } from 'firebase/firestore';

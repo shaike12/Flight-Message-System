@@ -10,8 +10,8 @@ import {
 import { fetchCustomVariablesAsync } from '../store/slices/customVariablesSlice';
 import { MessageTemplate } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Edit2, Trash2, Power, PowerOff, Eye, EyeOff } from 'lucide-react';
-import { Button, TextField, Checkbox, FormControlLabel, Box, Typography, Paper, Chip, IconButton, Tooltip, Modal, Fade, Backdrop, Container, Stack, Divider, InputLabel, OutlinedInput, FormControl } from '@mui/material';
+import { Edit2, Trash2, Power, PowerOff } from 'lucide-react';
+import { Button, TextField, Checkbox, FormControlLabel, Box, Typography, Paper, Chip, IconButton, Modal, Fade, Backdrop, Stack, Divider, Tooltip } from '@mui/material';
 
 const TemplateManager: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -46,7 +46,6 @@ const TemplateManager: React.FC = () => {
   useEffect(() => {
     dispatch(fetchCustomVariablesAsync());
   }, [dispatch]);
-  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [originalFormData, setOriginalFormData] = useState<{
     name: string;
     content: string;
@@ -54,7 +53,6 @@ const TemplateManager: React.FC = () => {
     frenchContent: string;
     isActive: boolean;
   } | null>(null);
-  const [showFrenchWarning, setShowFrenchWarning] = useState(false);
 
   // Filter templates based on search term
   const filteredTemplates = templates.filter(template =>
@@ -117,14 +115,6 @@ const TemplateManager: React.FC = () => {
       .replace(/\{internetCode\}/g, 'ABC123');
   };
 
-  // Check if form has changes
-  const hasChanges = originalFormData ? (
-    formData.name !== originalFormData.name ||
-    formData.content !== originalFormData.content ||
-    formData.englishContent !== originalFormData.englishContent ||
-    formData.frenchContent !== originalFormData.frenchContent ||
-    formData.isActive !== originalFormData.isActive
-  ) : false;
 
   // Available parameters for drag and drop - includes both basic and custom variables
   const availableParameters = useMemo(() => {
@@ -241,7 +231,6 @@ const TemplateManager: React.FC = () => {
 
     setFormData({ name: '', content: '', englishContent: '', frenchContent: '', isActive: true });
     setEditingTemplate(null);
-    setEditingTemplateId(null);
     setOriginalFormData(null);
     setShowForm(false);
     setValidationErrors({});
@@ -262,7 +251,6 @@ const TemplateManager: React.FC = () => {
     };
     setFormData(templateData);
     setOriginalFormData(templateData); // Store original data for comparison
-    setEditingTemplateId(template.id);
     setShowForm(true); // Show the modal form
   };
 

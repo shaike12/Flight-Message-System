@@ -12,6 +12,7 @@ const airportTimezones: Record<string, string> = {
   // Europe
   'LHR': 'Europe/London',
   'CDG': 'Europe/Paris',
+  'MRS': 'Europe/Paris',
   'FRA': 'Europe/Berlin',
   'MAD': 'Europe/Madrid',
   'FCO': 'Europe/Rome',
@@ -134,6 +135,7 @@ const getTimezoneFromAPI = async (airportCode: string): Promise<string | null> =
       'JFK': 'New_York',
       'LHR': 'London',
       'CDG': 'Paris',
+      'MRS': 'Marseille',
       'FRA': 'Berlin',
       'LAX': 'Los_Angeles',
       'NRT': 'Tokyo',

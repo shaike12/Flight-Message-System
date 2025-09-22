@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addCity, updateCity, deleteCity } from '../store/slices';
 import { addFlightRoute, updateFlightRoute, deleteFlightRoute, fetchFlightRoutes } from '../store/slices/flightRoutesSlice';
 import { City, FlightRoute } from '../types';
-import { MapPin, Plane, Plus, Edit2, Trash2, Save, X, Globe, Search, Info, AlertCircle } from 'lucide-react';
+import { MapPin, Plane, Plus, Edit2, Trash2, Save, X, Search, Info, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { 
   Box, 
@@ -20,13 +20,12 @@ import {
   TableRow, 
   Paper, 
   IconButton, 
-  Tooltip, 
   Alert, 
   CircularProgress, 
-  Container,
   Stack,
   Chip,
   Avatar,
+  Container,
   InputAdornment,
   Select,
   MenuItem,
@@ -36,7 +35,6 @@ import {
   Modal,
   Fade,
   Backdrop,
-  Grid
 } from '@mui/material';
 
 interface CombinedDestinationsTableProps {
@@ -53,7 +51,6 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
   const { t, language } = useLanguage();
   const dispatch = useAppDispatch();
   const { routes: flightRoutes, loading, error } = useAppSelector(useMemo(() => (state) => state.flightRoutes, []));
-  const elAlCities = cities.filter(city => city.isElAlDestination);
 
   // Fetch flight routes on component mount
   useEffect(() => {
@@ -62,8 +59,6 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
   
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [originalFlightNumber, setOriginalFlightNumber] = useState<string>('');
-  const [isAddingNew, setIsAddingNew] = useState(false);
-  const [addType, setAddType] = useState<'city' | 'route'>('city');
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
@@ -76,8 +71,6 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
         const routeData = JSON.parse(pendingRouteData);
         if (routeData.flightNumber) {
           // Auto-open the route form with pending data
-          setIsAddingNew(true);
-          setAddType('route');
           setRouteEditForm({
             flightNumber: routeData.flightNumber || '',
             departureCity: routeData.departureCity || '',
@@ -149,15 +142,6 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
     });
   }, [flightRoutes, searchTerm]);
 
-  const getCityName = (cityCode: string) => {
-    const city = cities.find(c => c.code === cityCode);
-    return city ? city.name : cityCode;
-  };
-
-  const getCityEnglishName = (cityCode: string) => {
-    const city = cities.find(c => c.code === cityCode);
-    return city ? city.englishName : cityCode;
-  };
 
   // City handlers
   const handleEditCity = (city: City) => {
@@ -178,7 +162,6 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
       dispatch(addCity(cityEditForm));
     }
     setEditingItem(null);
-    setIsAddingNew(false);
     setCityEditForm({
       code: '',
       name: '',
@@ -197,7 +180,6 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
   // Route handlers
   const handleEditRoute = (route: FlightRoute) => {
     setModalMode('edit');
-    setAddType('route');
     setIsModalOpen(true);
     setEditingItem(`route-${route.flightNumber}`);
     setOriginalFlightNumber(route.flightNumber);
@@ -295,7 +277,6 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
 
   const handleAddNew = (type: 'city' | 'route') => {
     setModalMode('add');
-    setAddType(type);
     setIsModalOpen(true);
     if (type === 'city') {
       setCityEditForm({

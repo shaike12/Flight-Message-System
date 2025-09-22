@@ -10,32 +10,20 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { getLocalTime, getLocalTimeWithDate, getCityUTCOffset, convertLocalTimeToUTC, convertUTCToLocalTime } from '../services/timezoneService';
-import { Plane, Calendar, MapPin, Copy, Trash2, AlertTriangle, CheckCircle, RefreshCw, FileText, Send } from 'lucide-react';
+import { getLocalTime, getLocalTimeWithDate, getCityUTCOffset, convertUTCToLocalTime } from '../services/timezoneService';
+import { FileText } from 'lucide-react';
+import FlightFormFields from './FlightFormFields';
+import GeneratedMessages from './GeneratedMessages';
+import FlightFormActions from './FlightFormActions';
+import FrenchWarningModal from './FrenchWarningModal';
 import { 
-  Button, 
-  TextField, 
-  Select, 
-  MenuItem, 
-  FormControl, 
-  InputLabel, 
-  Paper, 
   Box, 
   Typography, 
   Card, 
   CardContent, 
   CardHeader, 
-  Alert, 
-  CircularProgress, 
-  IconButton, 
-  Stack, 
-  useTheme, 
-  useMediaQuery,
   Autocomplete,
-  Popover,
-  Modal,
-  Fade,
-  Backdrop
+  Popover
 } from '@mui/material';
 
 interface FlightFormProps {
@@ -1021,363 +1009,25 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 </Box>
               )}
 
-              {/* Form Fields Grid */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
-                {/* Flight Number */}
-                <Box>
-                  <TextField
-                    fullWidth
-                    label={t.flightForm.flightNumber}
-                  name="flightNumber"
-                  value={formData.flightNumber}
-                  onChange={handleInputChange}
-                    inputProps={{
-                      maxLength: 4,
-                      pattern: "[0-9]*",
-                      inputMode: "numeric"
-                    }}
-                    placeholder={t.flightForm.flightNumberPlaceholder}
-                    helperText={t.flightForm.flightNumberHelper}
-                    InputProps={{
-                      startAdornment: (
-                        <Plane size={18} style={{ marginRight: 8, color: '#667eea' }} />
-                      )
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                      },
-                      '& .MuiInputBase-input': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                      '& .MuiInputLabel-root': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                      '& .MuiFormHelperText-root': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                    }}
-                  />
-                </Box>
+              {/* Form Fields */}
+              <FlightFormFields
+                formData={formData}
+                setFormData={setFormData}
+                cities={cities}
+                flightRoutes={flightRoutes}
+                customVariables={customVariables}
+                templateParameters={templateParameters}
+                language={language}
+                onDateFieldClick={handleDateFieldClick}
+                onInputChange={handleInputChange}
+                formatDateForDisplay={formatDateForDisplay}
+              />
 
-                {/* New Flight Number - always reserve space */}
-                <Box>
-                  <TextField
-                    fullWidth
-                    label={t.flightForm.newFlightNumber}
-                    name="newFlightNumber"
-                    value={formData.newFlightNumber}
-                    onChange={handleInputChange}
-                    inputProps={{
-                      maxLength: 4,
-                      pattern: "[0-9]*",
-                      inputMode: "numeric"
-                    }}
-                    placeholder={t.flightForm.newFlightNumberPlaceholder}
-                    InputProps={{
-                      startAdornment: (
-                        <RefreshCw size={18} style={{ marginRight: 8, color: '#667eea' }} />
-                      )
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                      },
-                      '& .MuiInputBase-input': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                      '& .MuiInputLabel-root': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                      '& .MuiFormHelperText-root': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                    }}
-                    style={{
-                      visibility: templateParameters.has('newFlightNumber') ? 'visible' : 'hidden'
-                    }}
-                  />
-                </Box>
 
-                {/* Departure City */}
-                <Box>
-                  <FormControl fullWidth>
-                    <InputLabel>{t.flightForm.departureCity}</InputLabel>
-                    <Select
-                    name="departureCity"
-                    value={formData.departureCity}
-                      onChange={(e) => setFormData(prev => ({ ...prev, departureCity: e.target.value }))}
-                      label={t.flightForm.departureCity}
-                      startAdornment={<MapPin size={18} style={{ marginRight: 8, color: '#667eea' }} />}
-                      sx={{
-                        borderRadius: 2,
-                        paddingRight: '20px', // Add space for dropdown arrow
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                        '& .MuiSelect-select': {
-                          textAlign: language === 'he' ? 'right' : 'left',
-                          direction: language === 'he' ? 'rtl' : 'ltr',
-                        },
-                        '& .MuiInputLabel-root': {
-                          textAlign: language === 'he' ? 'right' : 'left',
-                          direction: language === 'he' ? 'rtl' : 'ltr',
-                        },
-                        '& .MuiFormHelperText-root': {
-                          textAlign: language === 'he' ? 'right' : 'left',
-                          direction: language === 'he' ? 'rtl' : 'ltr',
-                        },
-                      }}
-                    >
-                      <MenuItem value="">
-                        <em>{t.flightForm.selectDepartureCity}</em>
-                      </MenuItem>
-                      {allDestinations.map((city) => (
-                        <MenuItem key={city.code} value={city.code}>
-                          {language === 'he' ? city.name : city.englishName} ({city.code})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {formData.departureCity && (
-                      <Typography variant="caption" color="text.secondary" sx={{ 
-                        mt: 0.5, 
-                        display: 'block', 
-                        fontSize: '0.75rem',
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr'
-                      }}>
-                        🕐 {departureLocalTime} - {t.flightForm.localTime}
-                        <br />
-                        📅 {departureLocalDate} - {t.flightForm.localDate}
-                      </Typography>
-                    )}
-                  </FormControl>
-                </Box>
 
-                {/* Arrival City */}
-                <Box>
-                  <FormControl fullWidth>
-                    <InputLabel>{t.flightForm.arrivalCity}</InputLabel>
-                    <Select
-                    name="arrivalCity"
-                    value={formData.arrivalCity}
-                      onChange={(e) => setFormData(prev => ({ ...prev, arrivalCity: e.target.value }))}
-                      label={t.flightForm.arrivalCity}
-                      startAdornment={<MapPin size={18} style={{ marginRight: 8, color: '#667eea' }} />}
-                      sx={{
-                        borderRadius: 2,
-                        paddingRight: '20px', // Add space for dropdown arrow
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                        '& .MuiSelect-select': {
-                          textAlign: language === 'he' ? 'right' : 'left',
-                          direction: language === 'he' ? 'rtl' : 'ltr',
-                        },
-                        '& .MuiInputLabel-root': {
-                          textAlign: language === 'he' ? 'right' : 'left',
-                          direction: language === 'he' ? 'rtl' : 'ltr',
-                        },
-                        '& .MuiFormHelperText-root': {
-                          textAlign: language === 'he' ? 'right' : 'left',
-                          direction: language === 'he' ? 'rtl' : 'ltr',
-                        },
-                      }}
-                    >
-                      <MenuItem value="">
-                        <em>{t.flightForm.selectArrivalCity}</em>
-                      </MenuItem>
-                      {allDestinations.map((city) => (
-                        <MenuItem key={city.code} value={city.code}>
-                          {language === 'he' ? city.name : city.englishName} ({city.code})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {formData.arrivalCity && (
-                      <Typography variant="caption" color="text.secondary" sx={{ 
-                        mt: 0.5, 
-                        display: 'block', 
-                        fontSize: '0.75rem',
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr'
-                      }}>
-                        🕐 {arrivalLocalTime} - {t.flightForm.localTime}
-                        <br />
-                        📅 {arrivalLocalDate} - {t.flightForm.localDate}
-                      </Typography>
-                    )}
-                  </FormControl>
-                </Box>
 
-                {/* Original Date */}
-                <Box>
-                  <TextField
-                    fullWidth
-                    label={t.flightForm.originalDate}
-                    name="originalDate"
-                    type="text"
-                    value={formatDateForDisplay(formData.originalDate)}
-                    onChange={handleInputChange}
-                    onClick={(e) => handleDateFieldClick(e, 'originalDate')}
-                    InputProps={{
-                      readOnly: true,
-                      endAdornment: (
-                        <IconButton
-                          onClick={(e) => handleDateFieldClick(e, 'originalDate')}
-                          edge="end"
-                          sx={{ color: '#667eea' }}
-                        >
-                          <Calendar size={18} />
-                        </IconButton>
-                      )
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                      },
-                      '& .MuiInputBase-input': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                      '& .MuiInputLabel-root': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                      '& .MuiFormHelperText-root': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                    }}
-                  />
-                </Box>
 
-                {/* New Date - always reserve space */}
-                <Box>
-                  <TextField
-                    fullWidth
-                    label={t.flightForm.newDate}
-                    name="newDate"
-                    type="text"
-                    value={formatDateForDisplay(formData.newDate)}
-                    onChange={handleInputChange}
-                    onClick={(e) => handleDateFieldClick(e, 'newDate')}
-                    InputProps={{
-                      readOnly: true,
-                      endAdornment: (
-                        <IconButton
-                          onClick={(e) => handleDateFieldClick(e, 'newDate')}
-                          edge="end"
-                          sx={{ color: '#667eea' }}
-                        >
-                          <Calendar size={18} />
-                        </IconButton>
-                      )
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                      },
-                      '& .MuiInputBase-input': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                      '& .MuiInputLabel-root': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                      '& .MuiFormHelperText-root': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                    }}
-                    style={{
-                      visibility: templateParameters.has('newDate') ? 'visible' : 'hidden'
-                    }}
-                  />
-                </Box>
 
-                {/* Original Time */}
-                <Box>
-                  <Typography variant="caption" sx={{ 
-                    color: 'text.secondary', 
-                    fontSize: '0.75rem',
-                    mb: 1,
-                    display: 'block',
-                    fontWeight: 500,
-                    textAlign: language === 'he' ? 'right' : 'left',
-                    direction: language === 'he' ? 'rtl' : 'ltr'
-                  }}>
-                    {t.flightForm.originalTimeHelper}
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    label={t.flightForm.originalTimeLabel}
-                    name="originalTime"
-                    type="time"
-                    value={formData.originalTime}
-                    onChange={handleInputChange}
-                    InputProps={{}}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                      },
-                      '& .MuiInputBase-input': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                      '& .MuiInputLabel-root': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                      '& .MuiFormHelperText-root': {
-                        textAlign: language === 'he' ? 'right' : 'left',
-                        direction: language === 'he' ? 'rtl' : 'ltr',
-                      },
-                    }}
-                  />
-                </Box>
 
                 {/* New Time */}
                 <Box>
@@ -1792,7 +1442,6 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                           '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
                             borderColor: '#667eea',
                           },
-
                         },
                         '& .MuiInputBase-input': {
                           textAlign: language === 'he' ? 'right' : 'left',
