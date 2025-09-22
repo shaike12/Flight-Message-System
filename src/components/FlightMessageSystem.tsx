@@ -4,7 +4,6 @@ import Statistics from './Statistics';
 import TemplateManager from './TemplateManager';
 import CombinedDestinationsTable from './CombinedDestinationsTable';
 import FlightForm from './FlightForm';
-import LanguageSwitcher from './LanguageSwitcher';
 import DataUpdater from './DataUpdater';
 import VariableManager from './VariableManager';
 import SentMessages from './SentMessages';
@@ -291,15 +290,6 @@ const FlightMessageSystem: React.FC = () => {
                   );
                 })}
               </Tabs>
-            </Box>
-            
-            {/* Language Switcher */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center',
-              flex: '0 0 auto'
-            }}>
-              <LanguageSwitcher />
             </Box>
           </Box>
         </Paper>

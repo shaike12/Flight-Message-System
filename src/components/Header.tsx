@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { LogOut, Settings, ChevronDown, Moon, Sun, Clock } from 'lucide-react';
+import LanguageSwitcher from './LanguageSwitcher';
+import { LogOut, Settings, ChevronDown, Moon, Sun, Clock, Globe } from 'lucide-react';
 import { 
   AppBar, 
   Toolbar, 
@@ -254,6 +255,20 @@ const Header: React.FC = () => {
           minWidth: 0,
           flex: '0 0 auto'
         }}>
+          {/* Language Switcher */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            px: 2,
+            py: 1,
+            borderRadius: 2,
+            background: 'rgba(102, 126, 234, 0.05)',
+            border: '1px solid rgba(102, 126, 234, 0.1)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <LanguageSwitcher />
+          </Box>
+
           {/* Dark Mode Toggle */}
           <IconButton
             onClick={toggleTheme}
