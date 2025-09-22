@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from 'firebase/auth';
-import { onAuthStateChange, signIn, signUp, logout, getUserData, signInWithGoogle, handleGoogleRedirectResult, sendPhoneVerification, verifyPhoneCode, clearRecaptcha, setPasswordForGoogleAccount, linkEmailPasswordToGoogle } from '../firebase/auth';
+import { onAuthStateChange, signIn, signUp, logout, getUserData, signInWithGoogle, handleGoogleRedirectResult, sendPhoneVerification, verifyPhoneCode, clearRecaptcha, setPasswordForGoogleAccount, linkEmailPasswordToGoogle, sendPasswordReset, changeUserPassword } from '../firebase/auth';
 
 interface UserData {
   email?: string;
@@ -23,6 +23,8 @@ interface AuthContextType {
   verifyPhoneCode: (confirmationResult: any, code: string) => Promise<{ success: boolean; error?: string }>;
   setPasswordForGoogleAccount: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
   linkEmailPasswordToGoogle: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  changeUserPassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  sendPasswordReset: (email: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -189,6 +191,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return result;
   };
 
+  const handleChangeUserPassword = async (currentPassword: string, newPassword: string) => {
+    const result = await changeUserPassword(currentPassword, newPassword);
+    return result;
+  };
+
+  const handleSendPasswordReset = async (email: string) => {
+    const result = await sendPasswordReset(email);
+    return result;
+  };
+
   const handleLogout = async () => {
     const result = await logout();
     // Clear reCAPTCHA on logout
@@ -207,6 +219,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     verifyPhoneCode: handleVerifyPhoneCode,
     setPasswordForGoogleAccount: handleSetPasswordForGoogleAccount,
     linkEmailPasswordToGoogle: handleLinkEmailPasswordToGoogle,
+    changeUserPassword: handleChangeUserPassword,
+    sendPasswordReset: handleSendPasswordReset,
     logout: handleLogout,
   };
 

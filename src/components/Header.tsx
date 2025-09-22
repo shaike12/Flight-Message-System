@@ -522,7 +522,13 @@ const Header: React.FC = () => {
                 
                 {/* Settings Option */}
                 <MenuItem 
-                  onClick={handleClose}
+                  onClick={() => {
+                    handleClose();
+                    // Navigate to user settings tab
+                    window.location.hash = '#user-settings';
+                    // Trigger a custom event to switch tabs
+                    window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'user-settings' }));
+                  }}
                   sx={{ 
                     py: 1.5,
                     px: 2,
@@ -537,7 +543,7 @@ const Header: React.FC = () => {
                     <Settings size={20} color="#667eea" />
                   </ListItemIcon>
                   <ListItemText 
-                    primary={t.header.settings} 
+                    primary="הגדרות אישיות" 
                     primaryTypographyProps={{ 
                       fontWeight: '500',
                       fontSize: '0.9rem'

@@ -57,10 +57,12 @@ interface MessageState {
 }
 
 const Login: React.FC = () => {
-  const { signIn, signUp, signInWithGoogle, sendPhoneVerification, verifyPhoneCode } = useAuth();
+  const { signIn, signUp, signInWithGoogle, sendPhoneVerification, verifyPhoneCode, sendPasswordReset } = useAuth();
   const { t, language } = useLanguage();
   
   const [isLogin, setIsLogin] = useState<boolean>(true);
+  const [showPasswordReset, setShowPasswordReset] = useState<boolean>(false);
+  const [resetEmail, setResetEmail] = useState<string>('');
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
@@ -210,6 +212,7 @@ const Login: React.FC = () => {
   const toggleMode = useCallback(() => {
     setIsLogin(prev => !prev);
     setMessage(null);
+    setShowPasswordReset(false);
     setFormData({
       email: '',
       password: '',
@@ -218,6 +221,44 @@ const Login: React.FC = () => {
       role: 'user'
     });
   }, []);
+
+  const handlePasswordReset = useCallback(async () => {
+    if (!resetEmail.trim()) {
+      setMessage({ 
+        type: 'error',
+        text: language === 'he' ? 'אנא הכנס כתובת אימייל' : 'Please enter an email address'
+      });
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const result = await sendPasswordReset(resetEmail);
+      
+      if (result.success) {
+        setMessage({ 
+          type: 'success',
+          text: language === 'he' ? 'נשלח אימייל לשחזור סיסמה לכתובת שלך' : 'Password reset email sent to your address'
+        });
+        setShowPasswordReset(false);
+        setResetEmail('');
+      } else {
+        setMessage({ 
+          type: 'error',
+          text: result.error || (language === 'he' ? 'שגיאה בשליחת אימייל שחזור' : 'Error sending reset email')
+        });
+      }
+    } catch (error) {
+      setMessage({ 
+        type: 'error',
+        text: language === 'he' ? 'שגיאה לא צפויה' : 'An unexpected error occurred'
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [resetEmail, sendPasswordReset, language]);
 
   const handleGoogleSignIn = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -231,7 +272,7 @@ const Login: React.FC = () => {
         // The user will be redirected to Google and then back to our app
         setMessage({ 
           type: 'success', 
-          text: language === 'he' ? 'מעביר ל-Google...' : 'Redirecting to Google...'
+          text: language === 'he' ? 'התחברת עם Google בהצלחה!' : 'Successfully signed in with Google!'
         });
       } else {
         setMessage({ 
@@ -457,7 +498,7 @@ const Login: React.FC = () => {
             )}
 
             {/* Email Authentication Form */}
-            {authMethod === 'email' && (
+            {authMethod === 'email' && !showPasswordReset && (
               <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
                 <Stack spacing={3}>
                 {!isLogin && (
@@ -665,6 +706,29 @@ const Login: React.FC = () => {
                   )}
                 </Button>
 
+                {/* Password Reset Button - Only show for login mode */}
+                {isLogin && (
+                  <Button
+                    type="button"
+                    onClick={() => setShowPasswordReset(true)}
+                    disabled={loading}
+                    fullWidth
+                    variant="text"
+                    sx={{
+                      py: 1,
+                      borderRadius: 2,
+                      color: '#667eea',
+                      textTransform: 'none',
+                      fontSize: '0.9rem',
+                      '&:hover': {
+                        backgroundColor: 'rgba(102, 126, 234, 0.08)',
+                      },
+                    }}
+                  >
+                    שכחת סיסמה?
+                  </Button>
+                )}
+
                 {/* Divider */}
                 <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
                   <Divider sx={{ flex: 1 }} />
@@ -870,6 +934,122 @@ const Login: React.FC = () => {
 
                   {/* reCAPTCHA Container */}
                   <div id="recaptcha-container"></div>
+                </Stack>
+              </Box>
+            )}
+
+            {/* Password Reset Form */}
+            {authMethod === 'email' && showPasswordReset && (
+              <Box sx={{ mt: 3 }}>
+                <Box sx={{ textAlign: 'center', mb: 3 }}>
+                  <Typography variant="h5" sx={{ 
+                    fontWeight: 'bold',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    mb: 1
+                  }}>
+                    שחזור סיסמה
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    הכנס את כתובת האימייל שלך ונשלח לך קישור לשחזור הסיסמה
+                  </Typography>
+                </Box>
+
+                <Stack spacing={3}>
+                  <TextField
+                    fullWidth
+                    label="כתובת אימייל"
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="הכנס את כתובת האימייל שלך"
+                    variant="outlined"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Mail size={20} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'primary.main',
+                        },
+                      },
+                    }}
+                  />
+
+                  {message && (
+                    <Alert
+                      severity={message.type === 'error' ? 'error' : 'success'}
+                      onClose={() => setMessage(null)}
+                      sx={{
+                        borderRadius: 2,
+                        '& .MuiAlert-message': {
+                          width: '100%',
+                        },
+                      }}
+                    >
+                      <Typography variant="body2">
+                        {message.text}
+                      </Typography>
+                    </Alert>
+                  )}
+
+                  <Button
+                    type="button"
+                    onClick={handlePasswordReset}
+                    disabled={loading}
+                    fullWidth
+                    variant="contained"
+                    sx={{
+                      py: 1.5,
+                      borderRadius: 2,
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+                      },
+                      '&:disabled': {
+                        background: 'linear-gradient(135deg, #a0a0a0 0%, #808080 100%)',
+                      },
+                    }}
+                  >
+                    {loading ? (
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <CircularProgress size={16} color="inherit" />
+                        <Typography variant="body2">
+                          שולח...
+                        </Typography>
+                      </Stack>
+                    ) : (
+                      <Typography variant="body1" fontWeight="bold">
+                        שלח קישור שחזור
+                      </Typography>
+                    )}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setShowPasswordReset(false);
+                      setResetEmail('');
+                      setMessage(null);
+                    }}
+                    variant="text"
+                    sx={{
+                      color: 'primary.main',
+                      fontWeight: 'bold',
+                      '&:hover': {
+                        textDecoration: 'underline',
+                      },
+                    }}
+                  >
+                    חזור להתחברות
+                  </Button>
                 </Stack>
               </Box>
             )}

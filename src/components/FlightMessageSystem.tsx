@@ -8,6 +8,7 @@ import DataUpdater from './DataUpdater';
 import VariableManager from './VariableManager';
 import SentMessages from './SentMessages';
 import UserManagement from './UserManagement';
+import UserSettings from './UserSettings';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -108,6 +109,12 @@ const FlightMessageSystem: React.FC = () => {
       icon: MessageSquare,
       description: 'הודעות שנשלחו'
     },
+    { 
+      id: 'user-settings', 
+      label: 'הגדרות אישיות', 
+      icon: Settings,
+      description: 'הגדרות חשבון וסיסמה'
+    },
     ...(userData?.role === 'admin' ? [
       { 
         id: 'data-updater', 
@@ -179,6 +186,8 @@ const FlightMessageSystem: React.FC = () => {
           );
         }
         return <UserManagement />;
+      case 'user-settings':
+        return <UserSettings />;
       default:
         return null;
     }

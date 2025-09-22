@@ -13,7 +13,9 @@ import {
   signInWithPhoneNumber,
   updatePassword,
   EmailAuthProvider,
-  linkWithCredential
+  linkWithCredential,
+  sendPasswordResetEmail,
+  reauthenticateWithCredential
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, getFirestore } from 'firebase/firestore';
 import app from './config';
@@ -338,6 +340,55 @@ export const linkEmailPasswordToGoogle = async (email: string, password: string)
     
     return { success: true };
   } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+};
+
+// Change password for existing email/password users
+export const changeUserPassword = async (currentPassword: string, newPassword: string) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      return { success: false, error: 'אין משתמש מחובר' };
+    }
+
+    // Check if user has email/password provider
+    const hasEmailPasswordProvider = user.providerData.some(provider => provider.providerId === 'password');
+    if (!hasEmailPasswordProvider) {
+      return { success: false, error: 'חשבון זה לא נוצר עם אימייל וסיסמה' };
+    }
+
+    // Re-authenticate user with current password
+    const credential = EmailAuthProvider.credential(user.email!, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+
+    // Update password
+    await updatePassword(user, newPassword);
+    
+    return { success: true };
+  } catch (error: any) {
+    if (error.code === 'auth/wrong-password') {
+      return { success: false, error: 'הסיסמה הנוכחית שגויה' };
+    } else if (error.code === 'auth/weak-password') {
+      return { success: false, error: 'הסיסמה החדשה חלשה מדי' };
+    }
+    return { success: false, error: error.message };
+  }
+};
+
+// Send password reset email
+export const sendPasswordReset = async (email: string) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return { success: true };
+  } catch (error: any) {
+    if (error.code === 'auth/user-not-found') {
+      return { success: false, error: 'לא נמצא משתמש עם כתובת אימייל זו' };
+    } else if (error.code === 'auth/invalid-email') {
+      return { success: false, error: 'כתובת אימייל לא תקינה' };
+    } else if (error.code === 'auth/too-many-requests') {
+      return { success: false, error: 'יותר מדי בקשות. נסה שוב מאוחר יותר' };
+    }
     return { success: false, error: error.message };
   }
 };
