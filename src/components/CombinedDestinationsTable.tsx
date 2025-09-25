@@ -476,7 +476,20 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
         </CardContent>
 
         {/* Scrollable Content */}
-        <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+        <Box sx={{ 
+          flex: 1, 
+          overflow: 'auto', 
+          p: 3,
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+          '&::-ms-overflow-style': {
+            display: 'none',
+          },
+          '&': {
+            scrollbarWidth: 'none',
+          },
+        }}>
           {/* Info Box */}
           <Alert 
             severity="info" 
@@ -522,19 +535,13 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
               overflow: 'auto',
               maxHeight: { xs: '60vh', sm: '70vh' },
               '&::-webkit-scrollbar': {
-                width: '8px',
-                height: '8px',
+                display: 'none',
               },
-              '&::-webkit-scrollbar-track': {
-                backgroundColor: '#f1f1f1',
-                borderRadius: '4px',
+              '&::-ms-overflow-style': {
+                display: 'none',
               },
-              '&::-webkit-scrollbar-thumb': {
-                backgroundColor: '#c1c1c1',
-                borderRadius: '4px',
-                '&:hover': {
-                  backgroundColor: '#a8a8a8',
-                },
+              '&': {
+                scrollbarWidth: 'none',
               },
             }}
           >
@@ -885,6 +892,15 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
               maxHeight: '90vh',
               overflow: 'auto',
               bgcolor: 'background.paper',
+              '&::-webkit-scrollbar': {
+                display: 'none',
+              },
+              '&::-ms-overflow-style': {
+                display: 'none',
+              },
+              '&': {
+                scrollbarWidth: 'none',
+              },
               borderRadius: 4,
               boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
               border: '1px solid rgba(255, 255, 255, 0.1)',

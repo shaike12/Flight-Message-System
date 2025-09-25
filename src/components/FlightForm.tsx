@@ -1849,18 +1849,13 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 overflowY: 'auto',
                 p: 3,
                 '&::-webkit-scrollbar': {
-                  width: '8px',
+                  display: 'none',
                 },
-                '&::-webkit-scrollbar-track': {
-                  background: 'rgba(0, 0, 0, 0.05)',
-                  borderRadius: '4px',
+                '&::-ms-overflow-style': {
+                  display: 'none',
                 },
-                '&::-webkit-scrollbar-thumb': {
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  borderRadius: '4px',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                  },
+                '&': {
+                  scrollbarWidth: 'none',
                 },
               }}>
                 {/* Error Display */}

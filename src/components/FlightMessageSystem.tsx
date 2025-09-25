@@ -323,7 +323,16 @@ const FlightMessageSystem: React.FC = () => {
           p: 3, 
           flex: 1, 
           overflow: 'auto',
-          position: 'relative'
+          position: 'relative',
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+          '&::-ms-overflow-style': {
+            display: 'none',
+          },
+          '&': {
+            scrollbarWidth: 'none',
+          },
         }}>
           {renderContent()}
         </Box>
