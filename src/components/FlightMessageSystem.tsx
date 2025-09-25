@@ -317,8 +317,8 @@ const FlightMessageSystem: React.FC = () => {
           border: '1px solid rgba(0, 0, 0, 0.08)',
           borderRadius: 3,
           overflow: 'hidden',
-          minHeight: '60vh',
-          maxHeight: '80vh',
+          minHeight: '70vh',
+          maxHeight: '95vh',
           display: 'flex',
           flexDirection: 'column'
         }}
