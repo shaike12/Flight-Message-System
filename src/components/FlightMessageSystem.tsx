@@ -144,7 +144,7 @@ const FlightMessageSystem: React.FC = () => {
     switch (activeTab) {
       case 'flights':
         return (
-          <div className="space-y-6">
+          <div className="space-y-6" style={{ overflow: 'hidden' }}>
             <FlightForm cities={memoizedData.cities} flightRoutes={memoizedData.flightRoutes} templates={memoizedData.templates} />
           </div>
         );

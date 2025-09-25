@@ -927,8 +927,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   }, [memoizedFlightRoutes]);
 
   return (
-    <Box sx={{ maxWidth: '100%', mx: 'auto' }}>
-      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 3, alignItems: 'stretch' }}>
+    <Box sx={{ 
+      maxWidth: '100%', 
+      mx: 'auto',
+      overflow: 'hidden'
+    }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', lg: 'row' }, 
+        gap: 3, 
+        alignItems: 'stretch',
+        overflow: 'hidden'
+      }}>
         {/* Form Section */}
         <Box sx={{ flex: 1 }}>
           <Card
