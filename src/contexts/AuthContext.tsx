@@ -91,11 +91,86 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
+    // Handle page visibility change - set user offline when tab is hidden
+    const handleVisibilityChange = async () => {
+      if (user) {
+        try {
+          const { doc, setDoc } = await import('firebase/firestore');
+          const { db } = await import('../firebase/auth');
+          await setDoc(doc(db, 'users', user.uid), {
+            isOnline: !document.hidden,
+            lastActivity: new Date()
+          }, { merge: true });
+        } catch (error) {
+          console.error('Error updating user visibility status:', error);
+        }
+      }
+    };
+
     window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       unsubscribe();
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user]);
+
+  // Update user activity status every 30 seconds
+  useEffect(() => {
+    if (!user) return;
+
+    const updateUserActivity = async () => {
+      try {
+        const { doc, setDoc } = await import('firebase/firestore');
+        const { db } = await import('../firebase/auth');
+        await setDoc(doc(db, 'users', user.uid), {
+          lastActivity: new Date(),
+          isOnline: true
+        }, { merge: true });
+      } catch (error) {
+        console.error('Error updating user activity:', error);
+      }
+    };
+
+    // Update immediately
+    updateUserActivity();
+
+    // Update every 30 seconds
+    const interval = setInterval(updateUserActivity, 30000);
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Update user activity on user interaction
+  useEffect(() => {
+    if (!user) return;
+
+    const updateActivityOnInteraction = async () => {
+      try {
+        const { doc, setDoc } = await import('firebase/firestore');
+        const { db } = await import('../firebase/auth');
+        await setDoc(doc(db, 'users', user.uid), {
+          lastActivity: new Date(),
+          isOnline: true
+        }, { merge: true });
+      } catch (error) {
+        console.error('Error updating user activity on interaction:', error);
+      }
+    };
+
+    // Add event listeners for user activity
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    events.forEach(event => {
+      document.addEventListener(event, updateActivityOnInteraction, true);
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, updateActivityOnInteraction, true);
+      });
     };
   }, [user]);
 
@@ -144,17 +219,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const interval = setInterval(checkSessionTimeout, 60000);
 
     // Also check on page visibility change (when user comes back to tab)
-    const handleVisibilityChange = () => {
+    const handleVisibilityChangeSession = () => {
       if (!document.hidden) {
         checkSessionTimeout();
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChangeSession);
 
     return () => {
       clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChangeSession);
     };
   }, [user]);
 
