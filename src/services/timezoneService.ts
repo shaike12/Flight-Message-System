@@ -42,6 +42,7 @@ const airportTimezones: Record<string, string> = {
   'SOF': 'Europe/Sofia',
   'BUH': 'Europe/Bucharest',
   'OTP': 'Europe/Bucharest',
+  'BCM': 'Europe/Bucharest', // Bacau, Romania
   'KBP': 'Europe/Kiev',
   'SVO': 'Asia/Moscow',
   'LED': 'Asia/Moscow',
@@ -188,6 +189,12 @@ const getTimezoneFromAPI = async (airportCode: string): Promise<string | null> =
       'SOF': 'Sofia',
       'BUH': 'Bucharest',
       'OTP': 'Bucharest',
+      'BCM': 'Bucharest', // Bacau, Romania
+      'CLJ': 'Bucharest', // Cluj-Napoca, Romania
+      'IAS': 'Bucharest', // Iasi, Romania
+      'TSR': 'Bucharest', // Timisoara, Romania
+      'CND': 'Bucharest', // Constanta, Romania
+      'SBZ': 'Bucharest', // Sibiu, Romania
       'KBP': 'Kiev',
       'SVO': 'Moscow',
       'LED': 'Moscow',
@@ -497,6 +504,95 @@ export const addAirportTimezone = (airportCode: string, timezone: string, cityNa
   timezoneCache.set(code, timezone);
   
   console.log(`✅ Manually added timezone for ${code}: ${timezone}`);
+};
+
+// Function to add a new airport with automatic timezone detection
+export const addNewAirport = async (airportCode: string, cityName: string, country: string): Promise<boolean> => {
+  try {
+    console.log(`🔍 Adding new airport: ${airportCode} (${cityName}, ${country})`);
+    
+    // First, try to find timezone automatically
+    const timezone = await getTimezoneFromAPI(airportCode);
+    
+    if (timezone) {
+      // Add to cache
+      timezoneCache.set(airportCode.toUpperCase(), timezone);
+      console.log(`✅ Successfully added ${airportCode} with timezone: ${timezone}`);
+      return true;
+    } else {
+      // If automatic detection fails, try to guess based on country
+      const countryTimezones: Record<string, string> = {
+        'Romania': 'Europe/Bucharest',
+        'Germany': 'Europe/Berlin',
+        'France': 'Europe/Paris',
+        'Italy': 'Europe/Rome',
+        'Spain': 'Europe/Madrid',
+        'United Kingdom': 'Europe/London',
+        'United States': 'America/New_York',
+        'Canada': 'America/Toronto',
+        'Japan': 'Asia/Tokyo',
+        'China': 'Asia/Shanghai',
+        'India': 'Asia/Kolkata',
+        'Australia': 'Australia/Sydney',
+        'Brazil': 'America/Sao_Paulo',
+        'Argentina': 'America/Buenos_Aires',
+        'South Africa': 'Africa/Johannesburg',
+        'Egypt': 'Africa/Cairo',
+        'Turkey': 'Europe/Istanbul',
+        'Russia': 'Europe/Moscow',
+        'Ukraine': 'Europe/Kiev',
+        'Poland': 'Europe/Warsaw',
+        'Czech Republic': 'Europe/Prague',
+        'Hungary': 'Europe/Budapest',
+        'Austria': 'Europe/Vienna',
+        'Switzerland': 'Europe/Zurich',
+        'Netherlands': 'Europe/Amsterdam',
+        'Belgium': 'Europe/Brussels',
+        'Denmark': 'Europe/Copenhagen',
+        'Sweden': 'Europe/Stockholm',
+        'Norway': 'Europe/Oslo',
+        'Finland': 'Europe/Helsinki',
+        'Greece': 'Europe/Athens',
+        'Bulgaria': 'Europe/Sofia',
+        'Serbia': 'Europe/Belgrade',
+        'Croatia': 'Europe/Zagreb',
+        'Slovenia': 'Europe/Ljubljana',
+        'Slovakia': 'Europe/Bratislava',
+        'Lithuania': 'Europe/Vilnius',
+        'Latvia': 'Europe/Riga',
+        'Estonia': 'Europe/Tallinn',
+        'Belarus': 'Europe/Minsk',
+        'Moldova': 'Europe/Chisinau',
+      };
+
+      const guessedTimezone = countryTimezones[country];
+      if (guessedTimezone) {
+        timezoneCache.set(airportCode.toUpperCase(), guessedTimezone);
+        console.log(`🔮 Guessed timezone for ${airportCode} based on country ${country}: ${guessedTimezone}`);
+        return true;
+      } else {
+        console.log(`❌ Could not determine timezone for ${airportCode} (${cityName}, ${country})`);
+        return false;
+      }
+    }
+  } catch (error) {
+    console.error(`Error adding new airport ${airportCode}:`, error);
+    return false;
+  }
+};
+
+// Function to get all cached airports
+export const getCachedAirports = (): Array<{code: string, timezone: string}> => {
+  return Array.from(timezoneCache.entries()).map(([code, timezone]) => ({
+    code,
+    timezone
+  }));
+};
+
+// Function to clear cache (useful for testing)
+export const clearTimezoneCache = (): void => {
+  timezoneCache.clear();
+  console.log('🗑️ Timezone cache cleared');
 };
 
 // Function to check if an airport has timezone support

@@ -93,7 +93,7 @@ export const he = {
       month: 'חודש',
       day: 'יום'
     },
-    sendMessage: 'שלח הודעה',
+    sendMessage: 'עדכן בדו״ח',
     messageSent: 'הודעה נשלחה בהצלחה',
     messageSentError: 'שגיאה בשליחת ההודעה',
     arrivalCityRequired: 'הגעה נדרשת',

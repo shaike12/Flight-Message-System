@@ -93,7 +93,7 @@ export const en = {
       month: 'Month',
       day: 'Day'
     },
-    sendMessage: 'Send Message',
+    sendMessage: 'Update Report',
     messageSent: 'Message sent successfully',
     messageSentError: 'Error sending message',
     arrivalCityRequired: 'Arrival city is required',
