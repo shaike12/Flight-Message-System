@@ -81,6 +81,9 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
             arrivalCityEnglish: routeData.arrivalCityEnglish || '',
             airline: routeData.airline || 'ELAL'
           });
+          // Open the modal automatically
+          setModalMode('add');
+          setIsModalOpen(true);
           // Clear the pending data after using it
           localStorage.removeItem('pendingRouteData');
         }
@@ -302,6 +305,9 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
             arrivalCityEnglish: routeData.arrivalCityEnglish || '',
             airline: routeData.airline || 'ELAL'
           });
+          // Open the modal automatically
+          setModalMode('add');
+          setIsModalOpen(true);
           // Clear the pending data after using it
           localStorage.removeItem('pendingRouteData');
         } catch (error) {
