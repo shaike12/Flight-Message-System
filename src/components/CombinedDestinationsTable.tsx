@@ -640,15 +640,15 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                           type="text"
                           value={routeEditForm.departureCityHebrew}
                           onChange={(e) => setRouteEditForm({...routeEditForm, departureCityHebrew: e.target.value})}
-                          placeholder="שם עברית"
+                          placeholder="יציאה (בעברית)"
                           className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
                         />
                         <input
                           type="text"
                           value={routeEditForm.departureCityEnglish}
                           onChange={(e) => setRouteEditForm({...routeEditForm, departureCityEnglish: e.target.value})}
-                          placeholder="English name"
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"
+                          placeholder="departure (english)"
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-left"
                         />
                       </div>
                     </TableCell>
@@ -1095,6 +1095,13 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                     value={routeEditForm.departureCityHebrew}
                     onChange={(e) => setRouteEditForm({...routeEditForm, departureCityHebrew: e.target.value})}
                     placeholder="תל אביב"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <MapPin size={20} color="#667eea" />
+                        </InputAdornment>
+                      ),
+                    }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
@@ -1117,14 +1124,60 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                   />
                 </Box>
 
-                {/* Departure City English */}
+               
+
+                {/* Arrival City Hebrew */}
                 <Box>
+                  <TextField
+                    fullWidth
+                    label="נחיתה (עברית)"
+                    value={routeEditForm.arrivalCityHebrew}
+                    onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCityHebrew: e.target.value})}
+                    placeholder="ניו יורק"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <MapPin size={20} color="#667eea" />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#667eea',
+                        },
+                      },
+                      '& .MuiInputBase-input': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      },
+                      '& .MuiInputLabel-root': {
+                        textAlign: 'right',
+                        direction: 'rtl'
+                      }
+                    }}
+                  />
+                </Box>
+
+                 {/* Departure City English */}
+                 <Box>
                   <TextField
                     fullWidth
                     label="Departure (English)"
                     value={routeEditForm.departureCityEnglish}
                     onChange={(e) => setRouteEditForm({...routeEditForm, departureCityEnglish: e.target.value})}
                     placeholder="Tel Aviv"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <MapPin size={20} color="#667eea" />
+                        </InputAdornment>
+                      ),
+                    }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
@@ -1147,36 +1200,6 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                   />
                 </Box>
 
-                {/* Arrival City Hebrew */}
-                <Box>
-                  <TextField
-                    fullWidth
-                    label="נחיתה (עברית)"
-                    value={routeEditForm.arrivalCityHebrew}
-                    onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCityHebrew: e.target.value})}
-                    placeholder="ניו יורק"
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#667eea',
-                        },
-                      },
-                      '& .MuiInputBase-input': {
-                        textAlign: 'right',
-                        direction: 'rtl'
-                      },
-                      '& .MuiInputLabel-root': {
-                        textAlign: 'right',
-                        direction: 'rtl'
-                      }
-                    }}
-                  />
-                </Box>
-
                 {/* Arrival City English */}
                 <Box>
                   <TextField
@@ -1185,6 +1208,13 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                     value={routeEditForm.arrivalCityEnglish}
                     onChange={(e) => setRouteEditForm({...routeEditForm, arrivalCityEnglish: e.target.value})}
                     placeholder="New York"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <MapPin size={20} color="#667eea" />
+                        </InputAdornment>
+                      ),
+                    }}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         borderRadius: 2,
