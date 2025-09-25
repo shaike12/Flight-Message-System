@@ -43,8 +43,8 @@ const airportTimezones: Record<string, string> = {
   'BUH': 'Europe/Bucharest',
   'OTP': 'Europe/Bucharest',
   'KBP': 'Europe/Kiev',
-  'SVO': 'Europe/Moscow',
-  'LED': 'Europe/Moscow',
+  'SVO': 'Asia/Moscow',
+  'LED': 'Asia/Moscow',
   'BEG': 'Europe/Belgrade',
   'TGD': 'Europe/Podgorica',
   
@@ -127,15 +127,23 @@ const airportTimezones: Record<string, string> = {
   'BUS': 'Europe/Brussels'
 };
 
-// Function to get timezone from airport code using external API
+// Enhanced function to get timezone from airport code using multiple APIs
 const getTimezoneFromAPI = async (airportCode: string): Promise<string | null> => {
   try {
+    console.log(`🔍 Checking online for airport: ${airportCode}`);
+    
     // Try multiple APIs for better coverage
     const apis = [
       // WorldTimeAPI - free, no key required
       `https://worldtimeapi.org/api/timezone`,
       // TimeZoneDB - requires API key but more accurate
       // `https://api.timezonedb.com/v2.1/list-time-zone?key=${API_KEY}&format=json`
+    ];
+
+    // First, try to get timezone directly from airport code using aviation APIs
+    const aviationAPIs = [
+      `https://api.aviationstack.com/v1/airports?access_key=YOUR_KEY&iata_code=${airportCode}`,
+      `https://airlabs.co/api/v9/airports?iata_code=${airportCode}&api_key=YOUR_KEY`
     ];
 
     // For now, we'll use a simple approach with airport code to city mapping
@@ -210,27 +218,91 @@ const getTimezoneFromAPI = async (airportCode: string): Promise<string | null> =
       return null;
     }
 
-    // Try to get timezone from WorldTimeAPI
-    const response = await fetch(`https://worldtimeapi.org/api/timezone`);
-    if (!response.ok) {
-      return null;
+    // Try multiple methods to find timezone
+    
+    // Method 1: Try WorldTimeAPI
+    try {
+      const response = await fetch(`https://worldtimeapi.org/api/timezone`);
+      if (response.ok) {
+        const timezones = await response.json();
+        const matchingTimezone = timezones.find((tz: string) => 
+          tz.toLowerCase().includes(cityName.toLowerCase())
+        );
+        if (matchingTimezone) {
+          console.log(`✅ Found timezone via WorldTimeAPI: ${matchingTimezone}`);
+          return matchingTimezone;
+        }
+      }
+    } catch (error) {
+      console.log('WorldTimeAPI failed:', error);
     }
 
-    const timezones = await response.json();
+    // Method 2: Try TimeZoneDB (if API key available)
+    // This would require an API key from timezonedb.com
+    // const timezoneDBResponse = await fetch(`https://api.timezonedb.com/v2.1/get-time-zone?key=${API_KEY}&format=json&by=city&city=${cityName}`);
     
-    // Find timezone that contains the city name
-    const matchingTimezone = timezones.find((tz: string) => 
-      tz.toLowerCase().includes(cityName.toLowerCase())
-    );
+    // Method 3: Try GeoNames API (free tier available)
+    try {
+      const geoNamesResponse = await fetch(`http://api.geonames.org/timezoneJSON?lat=0&lng=0&username=demo&country=${airportCode.substring(0, 2)}`);
+      if (geoNamesResponse.ok) {
+        const data = await geoNamesResponse.json();
+        if (data.timezoneId) {
+          console.log(`✅ Found timezone via GeoNames: ${data.timezoneId}`);
+          return data.timezoneId;
+        }
+      }
+    } catch (error) {
+      console.log('GeoNames API failed:', error);
+    }
 
-    return matchingTimezone || null;
+    // Method 4: Try to find timezone based on country code
+    const countryTimezoneMap: Record<string, string> = {
+      'US': 'America/New_York',
+      'CA': 'America/Toronto',
+      'GB': 'Europe/London',
+      'FR': 'Europe/Paris',
+      'DE': 'Europe/Berlin',
+      'IT': 'Europe/Rome',
+      'ES': 'Europe/Madrid',
+      'NL': 'Europe/Amsterdam',
+      'CH': 'Europe/Zurich',
+      'AT': 'Europe/Vienna',
+      'BE': 'Europe/Brussels',
+      'RU': 'Europe/Moscow',
+      'TR': 'Europe/Istanbul',
+      'AE': 'Asia/Dubai',
+      'TH': 'Asia/Bangkok',
+      'HK': 'Asia/Hong_Kong',
+      'JP': 'Asia/Tokyo',
+      'KR': 'Asia/Seoul',
+      'SG': 'Asia/Singapore',
+      'IN': 'Asia/Kolkata',
+      'ZA': 'Africa/Johannesburg',
+      'EG': 'Africa/Cairo',
+      'ET': 'Africa/Addis_Ababa',
+      'BR': 'America/Sao_Paulo',
+      'AR': 'America/Argentina/Buenos_Aires',
+      'CL': 'America/Santiago',
+      'AU': 'Australia/Sydney',
+      'NZ': 'Pacific/Auckland',
+      'IL': 'Asia/Jerusalem'
+    };
+
+    // Try to extract country code from airport code (this is a simplified approach)
+    const countryCode = airportCode.substring(0, 2);
+    if (countryTimezoneMap[countryCode]) {
+      console.log(`✅ Found timezone via country mapping: ${countryTimezoneMap[countryCode]}`);
+      return countryTimezoneMap[countryCode];
+    }
+
+    return null;
   } catch (error) {
     console.error('Error fetching timezone from API:', error);
     return null;
   }
 };
 
-// Function to get timezone with caching and fallback
+// Enhanced function to get timezone with smart online checking
 const getTimezone = async (airportCode: string): Promise<string | null> => {
   const code = airportCode.toUpperCase();
   
@@ -245,17 +317,51 @@ const getTimezone = async (airportCode: string): Promise<string | null> => {
     return airportTimezones[code];
   }
 
-  // Try API lookup
+  // If not found in local mapping, try online lookup
+  console.log(`⚠️ Airport ${code} not found in local mapping, checking online...`);
+  
   try {
     const timezone = await getTimezoneFromAPI(code);
     if (timezone) {
       timezoneCache.set(code, timezone);
+      console.log(`✅ Found timezone for ${code}: ${timezone}`);
       return timezone;
     }
   } catch (error) {
     console.error('API lookup failed:', error);
   }
 
+  // If still not found, try alternative methods
+  console.log(`❌ Could not find timezone for ${code}, trying alternative methods...`);
+  
+  // Try to guess timezone based on common patterns
+  const guessedTimezone = guessTimezoneFromCode(code);
+  if (guessedTimezone) {
+    timezoneCache.set(code, guessedTimezone);
+    console.log(`🔮 Guessed timezone for ${code}: ${guessedTimezone}`);
+    return guessedTimezone;
+  }
+
+  console.log(`❌ No timezone found for ${code}`);
+  return null;
+};
+
+// Function to guess timezone based on airport code patterns
+const guessTimezoneFromCode = (airportCode: string): string | null => {
+  const code = airportCode.toUpperCase();
+  
+  // Common patterns for guessing timezones
+  const patterns = [
+    // US airports
+    { pattern: /^[A-Z]{3}$/, region: 'America/New_York', description: 'US airport' },
+    // European airports
+    { pattern: /^[A-Z]{3}$/, region: 'Europe/London', description: 'European airport' },
+    // Asian airports
+    { pattern: /^[A-Z]{3}$/, region: 'Asia/Tokyo', description: 'Asian airport' },
+  ];
+  
+  // For now, return null to avoid incorrect guesses
+  // In a real implementation, you could use more sophisticated logic
   return null;
 };
 
@@ -372,4 +478,60 @@ export const convertUTCToLocalTime = async (utcTime: string, cityName: string): 
     console.error('Error converting UTC to local time:', error);
     return utcTime;
   }
+};
+
+// Function to manually add a new airport timezone
+export const addAirportTimezone = (airportCode: string, timezone: string, cityName?: string): void => {
+  const code = airportCode.toUpperCase();
+  
+  // Add to local mapping
+  airportTimezones[code] = timezone;
+  
+  // Add to city mapping if provided
+  if (cityName) {
+    // This would need to be added to the airportToCity mapping
+    console.log(`✅ Added ${code} (${cityName}) with timezone ${timezone}`);
+  }
+  
+  // Add to cache
+  timezoneCache.set(code, timezone);
+  
+  console.log(`✅ Manually added timezone for ${code}: ${timezone}`);
+};
+
+// Function to check if an airport has timezone support
+export const hasTimezoneSupport = (airportCode: string): boolean => {
+  const code = airportCode.toUpperCase();
+  return timezoneCache.has(code) || !!airportTimezones[code];
+};
+
+// Function to get all supported airports
+export const getSupportedAirports = (): string[] => {
+  return Object.keys(airportTimezones);
+};
+
+// Function to get timezone info for debugging
+export const getTimezoneInfo = (airportCode: string): { 
+  hasLocalMapping: boolean; 
+  hasCache: boolean; 
+  timezone: string | null;
+  source: 'local' | 'cache' | 'api' | 'none';
+} => {
+  const code = airportCode.toUpperCase();
+  const hasLocalMapping = !!airportTimezones[code];
+  const hasCache = timezoneCache.has(code);
+  const timezone = hasLocalMapping ? airportTimezones[code] : 
+                   hasCache ? (timezoneCache.get(code) || null) : null;
+  
+  let source: 'local' | 'cache' | 'api' | 'none' = 'none';
+  if (hasLocalMapping) source = 'local';
+  else if (hasCache) source = 'cache';
+  else if (timezone) source = 'api';
+  
+  return {
+    hasLocalMapping,
+    hasCache,
+    timezone,
+    source
+  };
 };
