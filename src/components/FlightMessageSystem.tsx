@@ -194,7 +194,11 @@ const FlightMessageSystem: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 4 }, px: { xs: 1, sm: 2 } }}>
+    <Container maxWidth="xl" sx={{ 
+      py: { xs: 2, sm: 4 }, 
+      px: { xs: 1, sm: 2 },
+      overflow: 'hidden'
+    }}>
       {/* Navigation Section */}
       <Box sx={{ mb: { xs: 2, sm: 4 } }}>
         <Paper
@@ -322,17 +326,8 @@ const FlightMessageSystem: React.FC = () => {
         <Box sx={{ 
           p: 3, 
           flex: 1, 
-          overflow: 'auto',
+          overflow: 'hidden',
           position: 'relative',
-          '&::-webkit-scrollbar': {
-            display: 'none',
-          },
-          '&::-ms-overflow-style': {
-            display: 'none',
-          },
-          '&': {
-            scrollbarWidth: 'none',
-          },
         }}>
           {renderContent()}
         </Box>
