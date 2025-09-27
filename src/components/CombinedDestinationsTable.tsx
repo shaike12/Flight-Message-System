@@ -420,7 +420,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
             </Stack>
             <Button
               variant="contained"
-              startIcon={<Plus size={20} />}
+              startIcon={<Plus size={20} style={{ marginLeft: '8px' }} />}
                 onClick={() => handleAddNew('route')}
               sx={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

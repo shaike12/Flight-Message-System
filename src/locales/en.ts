@@ -93,7 +93,8 @@ export const en = {
       month: 'Month',
       day: 'Day'
     },
-    sendMessage: 'Update Report',
+    sendMessage: 'Send Message',
+    updateReport: 'Update Report',
     messageSent: 'Message sent successfully',
     messageSentError: 'Error sending message',
     arrivalCityRequired: 'Arrival city is required',
@@ -106,7 +107,16 @@ export const en = {
     internetCodePlaceholder: 'Enter internet code',
     newFlightNumberPlaceholder: 'e.g.: 456 (optional)',
     addNewRoute: 'Add New Route',
-    dataUpdater: 'Data Updater'
+    dataUpdater: 'Data Updater',
+    sendMessages: 'Send Messages',
+    sendingMessages: 'Sending Messages...',
+    sending: 'Sending...',
+    individualMessage: 'Individual Message',
+    hideIndividualFields: 'Hide Individual Fields',
+    selectCsvFile: 'Select CSV File',
+    csvFileOnly: 'Please select CSV file only',
+    csvUploadOrIndividual: 'CSV file upload or individual sending:',
+    recordsInFile: 'records in file'
   },
 
   // Template Manager

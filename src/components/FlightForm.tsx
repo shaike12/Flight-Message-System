@@ -1243,7 +1243,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                   <Button
                     onClick={handleAddRoute}
                     variant="contained"
-                    startIcon={<MapPin size={18} />}
+                    startIcon={<MapPin size={18} style={{ marginLeft: '8px' }} />}
                     sx={{
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       borderRadius: 2,

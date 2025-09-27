@@ -93,7 +93,8 @@ export const he = {
       month: 'חודש',
       day: 'יום'
     },
-    sendMessage: 'עדכן בדו״ח',
+    sendMessage: 'שלח הודעה',
+    updateReport: 'עדכן בדו״ח',
     messageSent: 'הודעה נשלחה בהצלחה',
     messageSentError: 'שגיאה בשליחת ההודעה',
     arrivalCityRequired: 'הגעה נדרשת',
@@ -106,7 +107,16 @@ export const he = {
     internetCodePlaceholder: 'הזן קוד אינטרנט',
     newFlightNumberPlaceholder: 'למשל: 456 (אופציונלי)',
     addNewRoute: 'הוספת מסלול חדש',
-    dataUpdater: 'עדכון נתונים'
+    dataUpdater: 'עדכון נתונים',
+    sendMessages: 'שלח הודעות',
+    sendingMessages: 'שולח הודעות...',
+    sending: 'שולח...',
+    individualMessage: 'הודעה למספר בודד',
+    hideIndividualFields: 'הסתר שדות יחיד',
+    selectCsvFile: 'בחר קובץ CSV',
+    csvFileOnly: 'אנא בחר קובץ CSV בלבד',
+    csvUploadOrIndividual: 'העלאת קובץ CSV או שליחה למספר יחיד:',
+    recordsInFile: 'רשומות בקובץ'
   },
 
   // Template Manager
