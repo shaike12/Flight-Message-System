@@ -384,8 +384,14 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Card sx={{ height: '80vh', display: 'flex', flexDirection: 'column' }}>
+    <Container maxWidth="xl" sx={{ py: 4, overflow: 'visible' }}>
+      <Card sx={{ 
+        minHeight: 'auto',
+        height: 'auto',
+        display: 'flex', 
+        flexDirection: 'column',
+        overflow: 'visible'
+      }}>
         {/* Header - Fixed */}
         <CardContent sx={{ flexShrink: 0, borderBottom: '1px solid #e5e7eb' }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
