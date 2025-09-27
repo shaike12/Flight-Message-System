@@ -618,14 +618,14 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                         </Avatar>
                         <TextField
                           size="small"
-                            value={routeEditForm.flightNumber}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                              setRouteEditForm({...routeEditForm, flightNumber: value});
-                            }}
-                            placeholder="מספר טיסה"
+                          value={routeEditForm.flightNumber}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                            setRouteEditForm({...routeEditForm, flightNumber: value});
+                          }}
+                          placeholder="מספר טיסה"
                           sx={{ width: 100 }}
-                          inputProps={{ 
+                          inputProps={{
                             maxLength: 4,
                             pattern: '[0-9]*',
                             inputMode: 'numeric'
@@ -726,7 +726,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                                   setRouteEditForm({...routeEditForm, flightNumber: value});
                                 }}
                               sx={{ width: 100, textAlign: 'center' }}
-                              inputProps={{ 
+                              inputProps={{
                                 maxLength: 4,
                                 pattern: '[0-9]*',
                                 inputMode: 'numeric',

@@ -20,6 +20,7 @@
     "@types/node": "^16.18.126",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
+    "axios": "^1.12.2",
     "bcryptjs": "^3.0.2",
     "firebase": "^12.2.1",
     "firebase-admin": "^13.5.0",

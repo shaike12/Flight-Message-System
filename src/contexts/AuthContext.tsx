@@ -10,6 +10,8 @@ interface UserData {
   createdAt: string;
   lastLogin: string;
   provider?: string;
+  isOnline?: boolean;
+  lastActivity?: any;
 }
 
 interface AuthContextType {
@@ -66,8 +68,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (user) {
         // Fetch additional user data from Firestore
         const result = await getUserData(user.uid);
-        if (result.success) {
-          setUserData(result.data as UserData);
+        console.log('🔍 AuthContext - getUserData result:', result);
+        
+        if (result.success && result.data) {
+          // Check if we have the essential user data fields
+          const hasEssentialData = result.data.name && (result.data.email || result.data.phoneNumber);
+          
+          if (hasEssentialData) {
+            console.log('✅ AuthContext - Setting userData from Firestore:', result.data);
+            setUserData(result.data as UserData);
+          } else {
+            console.warn('⚠️ AuthContext - Firestore data incomplete, merging with Auth data:', result.data);
+            // Merge Firestore data with Firebase Auth data
+            const mergedUserData = {
+              name: result.data.name || user.displayName || user.email?.split('@')[0] || 'Unknown User',
+              email: result.data.email || user.email || '',
+              phoneNumber: result.data.phoneNumber || user.phoneNumber || '',
+              role: result.data.role || 'user',
+              createdAt: result.data.createdAt || new Date().toISOString(),
+              lastLogin: result.data.lastLogin || new Date().toISOString(),
+              provider: result.data.provider || user.providerData[0]?.providerId || 'unknown',
+              isOnline: result.data.isOnline || true,
+              lastActivity: result.data.lastActivity || new Date()
+            };
+            console.log('🔄 AuthContext - Using merged userData:', mergedUserData);
+            setUserData(mergedUserData);
+          }
+        } else {
+          console.error('❌ AuthContext - Firestore data not found, creating from Auth user');
+          // Fallback: create userData from Firebase Auth user
+          const fallbackUserData = {
+            name: user.displayName || user.email?.split('@')[0] || 'Unknown User',
+            email: user.email || '',
+            phoneNumber: user.phoneNumber || '',
+            role: 'user',
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString(),
+            provider: user.providerData[0]?.providerId || 'unknown'
+          };
+          console.log('🔄 AuthContext - Using fallback userData:', fallbackUserData);
+          setUserData(fallbackUserData);
         }
       } else {
         setUserData(null);
@@ -76,103 +116,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
     });
 
-    // Handle page unload - set user offline
-    const handleBeforeUnload = async () => {
-      if (user) {
-        try {
-          const { doc, setDoc } = await import('firebase/firestore');
-          const { db } = await import('../firebase/auth');
-          await setDoc(doc(db, 'users', user.uid), {
-            isOnline: false
-          }, { merge: true });
-        } catch (error) {
-          console.error('Error setting user offline:', error);
-        }
-      }
-    };
-
-    // Handle page visibility change - set user offline when tab is hidden
-    const handleVisibilityChange = async () => {
-      if (user) {
-        try {
-          const { doc, setDoc } = await import('firebase/firestore');
-          const { db } = await import('../firebase/auth');
-          await setDoc(doc(db, 'users', user.uid), {
-            isOnline: !document.hidden,
-            lastActivity: new Date()
-          }, { merge: true });
-        } catch (error) {
-          console.error('Error updating user visibility status:', error);
-        }
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Removed page unload and visibility tracking to save Firebase quota
 
     return () => {
       unsubscribe();
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [user]);
 
-  // Update user activity status every 30 seconds
-  useEffect(() => {
-    if (!user) return;
+  // Removed automatic user activity tracking to save Firebase quota
 
-    const updateUserActivity = async () => {
-      try {
-        const { doc, setDoc } = await import('firebase/firestore');
-        const { db } = await import('../firebase/auth');
-        await setDoc(doc(db, 'users', user.uid), {
-          lastActivity: new Date(),
-          isOnline: true
-        }, { merge: true });
-      } catch (error) {
-        console.error('Error updating user activity:', error);
-      }
-    };
-
-    // Update immediately
-    updateUserActivity();
-
-    // Update every 30 seconds
-    const interval = setInterval(updateUserActivity, 30000);
-
-    return () => clearInterval(interval);
-  }, [user]);
-
-  // Update user activity on user interaction
-  useEffect(() => {
-    if (!user) return;
-
-    const updateActivityOnInteraction = async () => {
-      try {
-        const { doc, setDoc } = await import('firebase/firestore');
-        const { db } = await import('../firebase/auth');
-        await setDoc(doc(db, 'users', user.uid), {
-          lastActivity: new Date(),
-          isOnline: true
-        }, { merge: true });
-      } catch (error) {
-        console.error('Error updating user activity on interaction:', error);
-      }
-    };
-
-    // Add event listeners for user activity
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    
-    events.forEach(event => {
-      document.addEventListener(event, updateActivityOnInteraction, true);
-    });
-
-    return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, updateActivityOnInteraction, true);
-      });
-    };
-  }, [user]);
+  // Removed user interaction tracking to save Firebase quota
 
   // Auto-logout after 8 hours
   useEffect(() => {

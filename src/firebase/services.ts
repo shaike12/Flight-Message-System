@@ -819,3 +819,147 @@ export const deleteCustomVariable = async (variableId: string): Promise<void> =>
     throw new Error('Failed to delete custom variable. Please try again.');
   }
 };
+
+// SMS Notification Service - Hot/Inforu Integration via Local Server
+export const sendSMSNotification = async (phoneNumber: string, message: string): Promise<{ success: boolean; error?: string; messageId?: string }> => {
+  try {
+    // Format phone number for Israeli numbers (remove leading 0 and add country code)
+    let formattedPhone = phoneNumber;
+    if (phoneNumber.startsWith('0')) {
+      formattedPhone = phoneNumber.substring(1); // Remove leading 0
+    } else if (phoneNumber.startsWith('+972')) {
+      formattedPhone = phoneNumber.substring(4); // Remove +972
+    } else if (phoneNumber.startsWith('972')) {
+      formattedPhone = phoneNumber.substring(3); // Remove 972
+    }
+    
+    console.log('Sending SMS via local server:', { 
+      to: formattedPhone, 
+      message: message.substring(0, 50) + '...' 
+    });
+    
+    // Call local SMS server
+    const smsServerUrl = process.env.REACT_APP_SMS_SERVER_URL || 'http://localhost:3001';
+    const response = await fetch(`${smsServerUrl}/send-sms`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        phoneNumber: formattedPhone,
+        message: message
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status} - ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('SMS sent successfully via local server');
+      return { 
+        success: true, 
+        messageId: result.messageId || 'sent'
+      };
+    } else {
+      throw new Error(result.error || 'Unknown error');
+    }
+    
+  } catch (error: any) {
+    console.error('Error sending SMS via local server:', error);
+    
+    // Fallback: save to Firebase for processing by the server
+    try {
+      const smsRequest = {
+        phoneNumber: phoneNumber.startsWith('0') ? phoneNumber.substring(1) : phoneNumber,
+        message: message,
+        timestamp: new Date().toISOString(),
+        status: 'pending',
+        sender: 'ELAL'
+      };
+      
+      const smsRequestsRef = collection(db, 'smsRequests');
+      const docRef = await addDoc(smsRequestsRef, smsRequest);
+      
+      console.log('SMS request saved to Firebase as fallback:', docRef.id);
+      
+      return { 
+        success: true, 
+        messageId: docRef.id
+      };
+    } catch (fallbackError) {
+      console.error('Fallback also failed:', fallbackError);
+      return { success: false, error: error.message };
+    }
+  }
+};
+
+// Email Notification Service - Simple implementation via local server
+export const sendEmailNotification = async (email: string, subject: string, message: string): Promise<{ success: boolean; error?: string; messageId?: string }> => {
+  try {
+    console.log('Sending email via local server:', {
+      to: email,
+      subject: subject,
+      message: message.substring(0, 50) + '...'
+    });
+    
+    const smsServerUrl = process.env.REACT_APP_SMS_SERVER_URL || 'http://localhost:3001';
+    const response = await fetch(`${smsServerUrl}/send-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        subject: subject,
+        message: message
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status} - ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('Email sent successfully via local server');
+      return {
+        success: true,
+        messageId: result.messageId || 'sent'
+      };
+    } else {
+      throw new Error(result.error || 'Unknown error');
+    }
+    
+  } catch (error: any) {
+    console.error('Error sending email via local server:', error);
+    
+    // Fallback: save to Firebase for processing by the server
+    try {
+      const emailRequest = {
+        email: email,
+        subject: subject,
+        message: message,
+        timestamp: new Date().toISOString(),
+        status: 'pending',
+        sender: 'ELAL'
+      };
+      
+      const emailRequestsRef = collection(db, 'emailRequests');
+      const docRef = await addDoc(emailRequestsRef, emailRequest);
+      
+      console.log('Email request saved to Firebase as fallback:', docRef.id);
+      
+      return {
+        success: true,
+        messageId: docRef.id
+      };
+    } catch (fallbackError) {
+      console.error('Fallback also failed:', fallbackError);
+      return { success: false, error: error.message };
+    }
+  }
+};

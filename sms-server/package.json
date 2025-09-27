@@ -1,0 +1,19 @@
+{
+  "name": "sms-server",
+  "version": "1.0.0",
+  "description": "SMS server for Hot SMS API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --max-old-space-size=512 server.js",
+    "dev": "nodemon --max-old-space-size=512 server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1",
+    "csv-parser": "^3.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: sms-server
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: HOT_SMS_BASE_CREDENTIALS
+        value: Basic bW9rZWQtZWxhbDo4MzI1MjQ3ZS03NzFiLTQyZDEtODg2Mi03MjdmZTYwYjRiOGI=
+      - key: HOT_SMS_API_URL
+        value: https://capi.inforu.co.il/api/v2/SMS/SendSms
+      - key: HOT_EMAIL_BASE_CREDENTIALS
+        value: Basic bW9rZWQtZWxhbDo4MzI1MjQ3ZS03NzFiLTQyZDEtODg2Mi03MjdmZTYwYjRiOGI=
+      - key: HOT_EMAIL_API_URL
+        value: https://capi.inforu.co.il/api/Umail/Campaign/Send/
+      - key: HOT_EMAIL_CAMPAIGN_ID
+        value: 57934763

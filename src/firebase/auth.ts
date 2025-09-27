@@ -61,7 +61,11 @@ export const signIn = async (email: string, password: string) => {
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     const currentLoginCount = userDoc.exists() ? (userDoc.data()?.loginCount || 0) : 0;
     
+    // Get existing user data to preserve it
+    const existingData = userDoc.exists() ? userDoc.data() : {};
+    
     await setDoc(doc(db, 'users', user.uid), {
+      ...existingData, // Preserve all existing data including role
       lastLogin: new Date().toISOString(),
       isOnline: true,
       loginCount: currentLoginCount + 1
@@ -77,7 +81,12 @@ export const logout = async () => {
   try {
     // Update user status to offline before signing out
     if (auth.currentUser) {
+      // Get existing user data to preserve it
+      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      const existingData = userDoc.exists() ? userDoc.data() : {};
+      
       await setDoc(doc(db, 'users', auth.currentUser.uid), {
+        ...existingData, // Preserve all existing data including role
         isOnline: false
       }, { merge: true });
     }
@@ -140,11 +149,13 @@ export const signInWithGoogle = async () => {
         provider: 'google'
       });
     } else {
-      // Update last login time for existing user
+      // Update last login time for existing user while preserving existing data
       const userDoc = await getDoc(doc(db, 'users', user.uid));
       const currentLoginCount = userDoc.exists() ? (userDoc.data()?.loginCount || 0) : 0;
+      const existingData = userDoc.exists() ? userDoc.data() : {};
       
       await setDoc(doc(db, 'users', user.uid), {
+        ...existingData, // Preserve all existing data including role
         lastLogin: new Date().toISOString(),
         isOnline: true,
         loginCount: currentLoginCount + 1
@@ -186,8 +197,12 @@ export const handleGoogleRedirectResult = async () => {
           provider: 'google'
         });
       } else {
-        // Update last login time for existing user
+        // Update last login time for existing user while preserving existing data
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const existingData = userDoc.exists() ? userDoc.data() : {};
+        
         await setDoc(doc(db, 'users', user.uid), {
+          ...existingData, // Preserve all existing data including role
           lastLogin: new Date().toISOString()
         }, { merge: true });
       }
@@ -419,6 +434,25 @@ export const updateUserRole = async (userId: string, newRole: string) => {
     // Update role in Firestore
     await setDoc(doc(db, 'users', userId), {
       role: newRole
+    }, { merge: true });
+    
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+};
+
+// Set current user as admin (for initial setup)
+export const setCurrentUserAsAdmin = async () => {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      return { success: false, error: 'אין משתמש מחובר' };
+    }
+
+    // Update current user's role to admin
+    await setDoc(doc(db, 'users', currentUser.uid), {
+      role: 'admin'
     }, { merge: true });
     
     return { success: true };

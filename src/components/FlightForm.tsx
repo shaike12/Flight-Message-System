@@ -18,7 +18,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { getLocalTime, getLocalTimeWithDate, getCityUTCOffset, convertLocalTimeToUTC, convertUTCToLocalTime } from '../services/timezoneService';
-import { Plane, Calendar, MapPin, Copy, Trash2, AlertTriangle, CheckCircle, RefreshCw, FileText, Send } from 'lucide-react';
+import { Plane, Calendar, MapPin, Copy, Trash2, AlertTriangle, CheckCircle, RefreshCw, FileText, Send, CloudUpload } from 'lucide-react';
 import { 
   Button, 
   TextField, 
@@ -42,13 +42,25 @@ import {
   Popover,
   Modal,
   Fade,
-  Backdrop
+  Backdrop,
+  FormControlLabel,
+  Checkbox,
+  LinearProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  Divider
 } from '@mui/material';
 
 interface FlightFormProps {
   cities: City[];
   flightRoutes: FlightRoute[];
   templates: MessageTemplate[];
+  onMessageGenerated?: (content: { hebrew: string; english: string; french?: string }) => void;
 }
 
 const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates }) => {
@@ -111,6 +123,22 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   const [currentTimeState, setCurrentTimeState] = useState(new Date());
   const [departureLocalTime, setDepartureLocalTime] = useState<string>('');
   const [departureLocalDate, setDepartureLocalDate] = useState<string>('');
+  
+  // Message sending states
+  const [sendSMS, setSendSMS] = useState(true);
+  const [sendEmail, setSendEmail] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [sendResult, setSendResult] = useState<any>(null);
+  const [showSendResult, setShowSendResult] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [previewMessage, setPreviewMessage] = useState<{hebrew: string; english: string; french?: string} | null>(null);
+  const [csvRecordCount, setCsvRecordCount] = useState<number | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Date picker states
   const [datePickerAnchor, setDatePickerAnchor] = useState<HTMLElement | null>(null);
@@ -730,6 +758,177 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     }
   };
 
+  // Message sending functions
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        setSelectedFile(file);
+        setError(null);
+        
+        // Count CSV records
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const text = e.target?.result as string;
+          const lines = text.split('\n').filter(line => line.trim());
+          setCsvRecordCount(lines.length - 1); // Subtract header row
+        };
+        reader.readAsText(file);
+      } else {
+        setError('אנא בחר קובץ CSV בלבד');
+      }
+    }
+  };
+
+  const handlePhoneChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setPhoneNumber(event.target.value);
+    if (phoneError) {
+      setPhoneError(null);
+    }
+  };
+
+  const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(event.target.value);
+    if (emailError) {
+      setEmailError(null);
+    }
+  };
+
+  const handleSendMessages = async () => {
+    // Validate phone number and email if sending individual message
+    if (!selectedFile) {
+      if (sendSMS && !phoneNumber.trim()) {
+        setPhoneError('אנא הזן מספר טלפון');
+        return;
+      }
+      if (sendEmail && !email.trim()) {
+        setEmailError('אנא הזן כתובת אימייל');
+        return;
+      }
+    }
+
+    if (!generatedText || !generatedEnglishText) {
+      setError('אנא צור הודעה לפני שליחת הודעות');
+      return;
+    }
+
+    // Show preview dialog before sending
+    setPreviewMessage({
+      hebrew: generatedText,
+      english: generatedEnglishText,
+      french: generatedFrenchText
+    });
+    setShowPreviewDialog(true);
+  };
+
+  const handleConfirmSend = async () => {
+    setShowPreviewDialog(false);
+    setIsSending(true);
+    setError(null);
+    
+    try {
+      const combinedMessage = `${generatedText}\n\n${generatedEnglishText}`;
+      const smsServerUrl = process.env.REACT_APP_SMS_SERVER_URL || 'http://localhost:3001';
+      
+      let response;
+      let data;
+      
+      if (selectedFile) {
+        // Bulk sending via CSV
+        const formData = new FormData();
+        formData.append('csvFile', selectedFile);
+        formData.append('messageContent', combinedMessage);
+        formData.append('sendSMS', sendSMS.toString());
+        formData.append('sendEmail', sendEmail.toString());
+        
+        response = await fetch(`${smsServerUrl}/send-bulk`, {
+          method: 'POST',
+          body: formData,
+        });
+        
+        data = await response.json();
+        
+        if (data.success) {
+          setSendResult(data.results);
+          setShowSendResult(true);
+        } else {
+          setError(data.error || 'שגיאה בשליחת ההודעות');
+        }
+      } else {
+        // Individual sending
+        let successCount = 0;
+        let errorMessages = [];
+        
+        if (sendSMS && phoneNumber) {
+          try {
+            const smsResponse = await fetch(`${smsServerUrl}/send-sms`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                phoneNumber: phoneNumber,
+                message: combinedMessage
+              })
+            });
+            
+            const smsData = await smsResponse.json();
+            if (smsData.success) {
+              successCount++;
+            } else {
+              errorMessages.push(`SMS נכשל: ${smsData.error}`);
+            }
+          } catch (error) {
+            errorMessages.push('שליחת SMS נכשלה');
+          }
+        }
+        
+        if (sendEmail && email) {
+          try {
+            const emailResponse = await fetch(`${smsServerUrl}/send-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: email,
+                subject: 'הודעת טיסה - ELAL',
+                message: combinedMessage
+              })
+            });
+            
+            const emailData = await emailResponse.json();
+            if (emailData.success) {
+              successCount++;
+            } else {
+              errorMessages.push(`אימייל נכשל: ${emailData.error}`);
+            }
+          } catch (error) {
+            errorMessages.push('שליחת אימייל נכשלה');
+          }
+        }
+        
+        if (successCount > 0) {
+          setSendResult({
+            total: 1,
+            smsSent: sendSMS && phoneNumber ? 1 : 0,
+            emailSent: sendEmail && email ? 1 : 0,
+            errors: errorMessages
+          });
+          setShowSendResult(true);
+        } else {
+          setError(errorMessages.join(', ') || 'שגיאה בשליחת ההודעות');
+        }
+      }
+    } catch (error) {
+      console.error('Error sending messages:', error);
+      setError('שגיאה בשליחת ההודעות');
+    } finally {
+      setIsSending(false);
+      setPreviewMessage(null);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
@@ -930,15 +1129,24 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     <Box sx={{ 
       maxWidth: '100%', 
       mx: 'auto',
-      overflow: 'hidden'
+      minHeight: '100vh',
+      height: 'auto'
     }}>
       <Box sx={{ 
         display: 'flex', 
-        flexDirection: { xs: 'column', lg: 'row' }, 
+        flexDirection: 'column', 
         gap: 3, 
         alignItems: 'stretch',
-        overflow: 'hidden'
+        minHeight: '100%',
+        height: 'auto'
       }}>
+        {/* Top Row - Form Section and Template Selection */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', lg: 'row' }, 
+          gap: 3, 
+          alignItems: 'stretch'
+        }}>
         {/* Form Section */}
         <Box sx={{ flex: 1 }}>
           <Card
@@ -948,8 +1156,9 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(0, 0, 0, 0.08)',
               borderRadius: 3,
-              overflow: 'hidden',
-              height: '100%',
+              overflow: 'visible',
+              minHeight: 'auto',
+              height: 'auto',
               display: 'flex',
               flexDirection: 'column'
             }}
@@ -996,7 +1205,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 borderBottom: '1px solid rgba(0, 0, 0, 0.08)'
               }}
             />
-            <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <CardContent sx={{ p: 3, minHeight: 'auto', height: 'auto', display: 'flex', flexDirection: 'column' }}>
               {/* Status Messages */}
               {autoFillStatus.type && (
                 <Alert 
@@ -1740,8 +1949,9 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(0, 0, 0, 0.08)',
               borderRadius: 3,
-              overflow: 'hidden',
-              height: '100%',
+              overflow: 'visible',
+              minHeight: 'auto',
+              height: 'auto',
               display: 'flex',
               flexDirection: 'column'
             }}
@@ -1788,7 +1998,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 borderBottom: '1px solid rgba(0, 0, 0, 0.08)'
               }}
             />
-            <CardContent sx={{ p: 0, display: 'flex', flexDirection: 'column', flex: 1 }}>
+            <CardContent sx={{ p: 0, display: 'flex', flexDirection: 'column', minHeight: 'auto', height: 'auto' }}>
               {/* Fixed Template Selection Header */}
               <Box sx={{ 
                 p: 3, 
@@ -2137,6 +2347,312 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
             </CardContent>
           </Card>
         </Box>
+        </Box>
+
+        {/* Message Sending Section - Full Width */}
+        <Box sx={{ width: '100%' }}>
+          <Card
+            elevation={0}
+            sx={{
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              borderRadius: 3,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <CardHeader
+              title={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2,
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                    }}
+                  >
+                    <Send size={20} color="white" />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" sx={{ 
+                      fontWeight: 'bold',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent'
+                    }}>
+                      שליחת הודעות
+                    </Typography>
+                    <Typography variant="caption" sx={{ 
+                      color: 'text.secondary',
+                      fontSize: '0.75rem'
+                    }}>
+                      שליחה יחידה או המונית
+                    </Typography>
+                  </Box>
+                </Box>
+              }
+              sx={{ 
+                pb: 1,
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%)',
+                borderBottom: '1px solid rgba(0, 0, 0, 0.08)'
+              }}
+            />
+            <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Message Type Selection */}
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
+                  סוג הודעה:
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={sendSMS}
+                        onChange={(e) => setSendSMS(e.target.checked)}
+                        sx={{
+                          color: '#10b981',
+                          '&.Mui-checked': {
+                            color: '#10b981',
+                          },
+                        }}
+                      />
+                    }
+                    label="SMS"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={sendEmail}
+                        onChange={(e) => setSendEmail(e.target.checked)}
+                        disabled={true}
+                        sx={{
+                          color: '#6b7280',
+                          '&.Mui-checked': {
+                            color: '#6b7280',
+                          },
+                        }}
+                      />
+                    }
+                    label="אימייל (לא זמין)"
+                  />
+                </Box>
+              </Box>
+
+              {/* File Upload or Individual Fields */}
+              <Box>
+                <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
+                  העלאת קובץ CSV או שליחה למספר יחיד:
+                </Typography>
+                
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<CloudUpload />}
+                    size="small"
+                  >
+                    בחר קובץ CSV
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      hidden
+                      accept=".csv"
+                      onChange={handleFileSelect}
+                    />
+                  </Button>
+                  
+                  {selectedFile && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Typography variant="body2" color="primary">
+                        נבחר: {selectedFile.name}
+                      </Typography>
+                      {csvRecordCount !== null && (
+                        <Typography variant="body2" color="success.main" sx={{ fontWeight: 'bold' }}>
+                          {csvRecordCount} רשומות בקובץ
+                        </Typography>
+                      )}
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setCsvRecordCount(null);
+                          // Reset the file input
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                        }}
+                        sx={{ 
+                          minWidth: 'auto',
+                          px: 1,
+                          py: 0.5,
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        הסר
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Individual Contact Fields */}
+                <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, mt: 2 }}>
+                  <Box sx={{ flex: 1, maxWidth: 300 }}>
+                    {phoneError && (
+                      <Alert severity="error" sx={{ mb: 1, borderRadius: 2, fontSize: '0.875rem' }}>
+                        {phoneError}
+                      </Alert>
+                    )}
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="מספר טלפון"
+                      value={phoneNumber}
+                      onChange={handlePhoneChange}
+                      placeholder="0501234567"
+                      error={!!phoneError}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          direction: 'rtl',
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: phoneError ? '#d32f2f' : '#667eea',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: phoneError ? '#d32f2f' : '#667eea',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          right: 20,
+                          left: 'auto',
+                          transformOrigin: 'top right',
+                          '&.Mui-focused': {
+                            transform: 'translate(20px, -9px) scale(0.75)',
+                          },
+                          '&.MuiFormLabel-filled': {
+                            transform: 'translate(20px, -9px) scale(0.75)',
+                          },
+                        },
+                        '& .MuiOutlinedInput-input': {
+                          textAlign: 'right',
+                          padding: '8.5px 14px',
+                        },
+                      }}
+                    />
+                  </Box>
+
+                  <Box sx={{ flex: 1, maxWidth: 300 }}>
+                    {emailError && (
+                      <Alert severity="error" sx={{ mb: 1, borderRadius: 2, fontSize: '0.875rem' }}>
+                        {emailError}
+                      </Alert>
+                    )}
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="כתובת אימייל"
+                      type="email"
+                      value={email}
+                      onChange={handleEmailChange}
+                      placeholder="user@example.com"
+                      error={!!emailError}
+                      disabled={true}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          direction: 'rtl',
+                          '&:hover .MuiOutlinedInput-notchedOutline': {
+                            borderColor: emailError ? '#d32f2f' : '#667eea',
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: emailError ? '#d32f2f' : '#667eea',
+                          },
+                        },
+                        '& .MuiInputLabel-root': {
+                          right: 20,
+                          left: 'auto',
+                          transformOrigin: 'top right',
+                          '&.Mui-focused': {
+                            transform: 'translate(20px, -9px) scale(0.75)',
+                          },
+                          '&.MuiFormLabel-filled': {
+                            transform: 'translate(20px, -9px) scale(0.75)',
+                          },
+                        },
+                        '& .MuiOutlinedInput-input': {
+                          textAlign: 'right',
+                          padding: '8.5px 14px',
+                        },
+                      }}
+                    />
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Send Button */}
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 'auto' }}>
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={isSending ? <CircularProgress size={20} /> : <Send />}
+                  onClick={handleSendMessages}
+                  disabled={isSending || (!selectedFile && !phoneNumber && !email) || !generatedText}
+                  sx={{
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: 'white',
+                    borderRadius: 2,
+                    px: 4,
+                    py: 1.5,
+                    fontWeight: 'bold',
+                    textTransform: 'none',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #0ea472 0%, #047857 100%)',
+                      boxShadow: '0 6px 16px rgba(16, 185, 129, 0.4)',
+                    },
+                    '&:disabled': {
+                      background: '#d1d5db',
+                      color: '#9ca3af',
+                      boxShadow: 'none',
+                    },
+                    '& .MuiButton-startIcon': {
+                      marginRight: '8px',
+                      marginLeft: 0
+                    }
+                  }}
+                >
+                  {isSending ? 'שולח הודעות...' : (selectedFile ? 'שלח הודעות המוניות' : 'שלח הודעה יחידה')}
+                </Button>
+              </Box>
+
+              {/* Error Display */}
+              {error && (
+                <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>
+                  {error}
+                </Alert>
+              )}
+
+              {/* Loading Progress */}
+              {isSending && (
+                <Box sx={{ mt: 2 }}>
+                  <LinearProgress />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+                    שולח הודעות... אנא המתן.
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Box>
       </Box>
 
       {/* Date Picker Popover */}
@@ -2404,6 +2920,241 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
           </Box>
         </Fade>
       </Modal>
+
+      {/* Preview Dialog */}
+      <Dialog
+        open={showPreviewDialog}
+        onClose={() => setShowPreviewDialog(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            border: '1px solid rgba(102, 126, 234, 0.2)',
+            backdropFilter: 'blur(10px)',
+            background: 'rgba(255, 255, 255, 0.95)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          textAlign: 'center', 
+          fontWeight: 'bold',
+          color: 'primary.main',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          pb: 2
+        }}>
+          {selectedFile ? 'אישור שליחת הודעות המוניות' : 'אישור שליחת הודעה יחידה'}
+        </DialogTitle>
+        
+        <DialogContent sx={{ pt: 3 }}>
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              <strong>שים לב:</strong> {selectedFile 
+                ? `ההודעה תישלח ל-${csvRecordCount || 0} אנשי קשר מהקובץ שציינת.`
+                : 'ההודעה תישלח למספר הטלפון/אימייל שציינת.'
+              }
+            </Typography>
+          </Alert>
+
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+              הודעה בעברית:
+            </Typography>
+            <Paper 
+              elevation={1}
+              sx={{ 
+                p: 2, 
+                backgroundColor: 'rgba(102, 126, 234, 0.05)',
+                border: '1px solid rgba(102, 126, 234, 0.1)',
+                borderRadius: 2,
+                direction: 'rtl'
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: 'monospace',
+                  fontSize: '0.9rem'
+                }}
+              >
+                {previewMessage?.hebrew}
+              </Typography>
+            </Paper>
+          </Box>
+
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+              הודעה באנגלית:
+            </Typography>
+            <Paper
+              elevation={1}
+              sx={{ 
+                p: 2, 
+                backgroundColor: 'rgba(102, 126, 234, 0.05)',
+                border: '1px solid rgba(102, 126, 234, 0.1)',
+                borderRadius: 2,
+                direction: 'ltr'
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: 'monospace',
+                  fontSize: '0.9rem'
+                }}
+              >
+                {previewMessage?.english}
+              </Typography>
+            </Paper>
+          </Box>
+
+          {previewMessage?.french && (
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+                הודעה בצרפתית:
+              </Typography>
+              <Paper
+                elevation={1}
+                sx={{ 
+                  p: 2, 
+                  backgroundColor: 'rgba(102, 126, 234, 0.05)',
+                  border: '1px solid rgba(102, 126, 234, 0.1)',
+                  borderRadius: 2,
+                  direction: 'ltr'
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    whiteSpace: 'pre-wrap',
+                    fontFamily: 'monospace',
+                    fontSize: '0.9rem'
+                  }}
+                >
+                  {previewMessage.french}
+                </Typography>
+              </Paper>
+            </Box>
+          )}
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3, gap: 2 }}>
+          <Button
+            onClick={() => setShowPreviewDialog(false)}
+            variant="outlined"
+            sx={{ borderRadius: 2 }}
+          >
+            ביטול
+          </Button>
+          <Button
+            onClick={handleConfirmSend}
+            variant="contained"
+            disabled={isSending}
+            startIcon={isSending ? <CircularProgress size={16} /> : <Send />}
+            sx={{
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              minWidth: 120,
+              '&:hover': {
+                background: 'linear-gradient(135deg, #0ea472 0%, #047857 100%)',
+              }
+            }}
+          >
+            {isSending ? 'שולח...' : (selectedFile ? 'שלח הודעות המוניות' : 'שלח הודעה יחידה')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Send Result Dialog */}
+      <Dialog
+        open={showSendResult}
+        onClose={() => setShowSendResult(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            backdropFilter: 'blur(10px)',
+            background: 'rgba(255, 255, 255, 0.95)',
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          textAlign: 'center', 
+          fontWeight: 'bold',
+          color: 'success.main',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          pb: 2
+        }}>
+          סיכום השליחה
+        </DialogTitle>
+        
+        <DialogContent sx={{ pt: 3 }}>
+          {sendResult && (
+            <Box>
+              <Typography variant="h6" sx={{ mb: 2, textAlign: 'center' }}>
+                ✅ השליחה הושלמה בהצלחה!
+              </Typography>
+              
+              <List>
+                <ListItem>
+                  <ListItemText 
+                    primary="סה״כ הודעות" 
+                    secondary={sendResult.total} 
+                  />
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText 
+                    primary="SMS נשלחו" 
+                    secondary={sendResult.smsSent} 
+                  />
+                </ListItem>
+                <Divider />
+                <ListItem>
+                  <ListItemText 
+                    primary="אימיילים נשלחו" 
+                    secondary={sendResult.emailSent} 
+                  />
+                </ListItem>
+                {sendResult.errors && sendResult.errors.length > 0 && (
+                  <>
+                    <Divider />
+                    <ListItem>
+                      <ListItemText 
+                        primary="שגיאות" 
+                        secondary={sendResult.errors.join(', ')} 
+                        secondaryTypographyProps={{ color: 'error.main' }}
+                      />
+                    </ListItem>
+                  </>
+                )}
+              </List>
+            </Box>
+          )}
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3 }}>
+          <Button
+            onClick={() => setShowSendResult(false)}
+            variant="contained"
+            sx={{
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #0ea472 0%, #047857 100%)',
+              }
+            }}
+          >
+            סגור
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

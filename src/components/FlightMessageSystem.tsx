@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAppSelector } from '../store/hooks';
+import { createSelector } from '@reduxjs/toolkit';
 import Statistics from './Statistics';
 import TemplateManager from './TemplateManager';
 import CombinedDestinationsTable from './CombinedDestinationsTable';
@@ -8,7 +9,6 @@ import DataUpdater from './DataUpdater';
 import VariableManager from './VariableManager';
 import SentMessages from './SentMessages';
 import UserManagement from './UserManagement';
-import UserSettings from './UserSettings';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { 
@@ -33,17 +33,22 @@ import {
   Shield
 } from 'lucide-react';
 
+// Create a memoized selector to prevent unnecessary re-renders
+const selectFlightData = createSelector(
+  [
+    (state: any) => state.templates.templates,
+    (state: any) => state.cities.cities,
+    (state: any) => state.flightRoutes.routes,
+  ],
+  (templates, cities, flightRoutes) => ({
+    templates,
+    cities,
+    flightRoutes,
+  })
+);
+
 const FlightMessageSystem: React.FC = () => {
-  const { templates, cities, flightRoutes } = useAppSelector(
-    useMemo(
-      () => (state) => ({
-        templates: state.templates.templates,
-        cities: state.cities.cities,
-        flightRoutes: state.flightRoutes.routes,
-      }),
-      []
-    )
-  );
+  const { templates, cities, flightRoutes } = useAppSelector(selectFlightData);
 
   // Memoize the data to prevent unnecessary re-renders
   const memoizedData = useMemo(() => ({
@@ -55,6 +60,11 @@ const FlightMessageSystem: React.FC = () => {
   const { t } = useLanguage();
   const { userData } = useAuth();
   const [activeTab, setActiveTab] = useState('flights');
+  const [generatedMessageContent, setGeneratedMessageContent] = useState<{
+    hebrew: string;
+    english: string;
+    french?: string;
+  } | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -109,12 +119,6 @@ const FlightMessageSystem: React.FC = () => {
       icon: MessageSquare,
       description: 'הודעות שנשלחו'
     },
-    { 
-      id: 'user-settings', 
-      label: 'הגדרות אישיות', 
-      icon: Settings,
-      description: 'הגדרות חשבון וסיסמה'
-    },
     ...(userData?.role === 'admin' ? [
       { 
         id: 'data-updater', 
@@ -145,7 +149,12 @@ const FlightMessageSystem: React.FC = () => {
       case 'flights':
         return (
           <div className="space-y-6" style={{ overflow: 'hidden' }}>
-            <FlightForm cities={memoizedData.cities} flightRoutes={memoizedData.flightRoutes} templates={memoizedData.templates} />
+            <FlightForm 
+              cities={memoizedData.cities} 
+              flightRoutes={memoizedData.flightRoutes} 
+              templates={memoizedData.templates}
+              onMessageGenerated={setGeneratedMessageContent}
+            />
           </div>
         );
       case 'destinations':
@@ -186,8 +195,6 @@ const FlightMessageSystem: React.FC = () => {
           );
         }
         return <UserManagement />;
-      case 'user-settings':
-        return <UserSettings />;
       default:
         return null;
     }
@@ -197,7 +204,7 @@ const FlightMessageSystem: React.FC = () => {
     <Container maxWidth="xl" sx={{ 
       py: { xs: 2, sm: 4 }, 
       px: { xs: 1, sm: 2 },
-      overflow: 'hidden'
+      overflow: 'visible'
     }}>
       {/* Navigation Section */}
       <Box sx={{ mb: { xs: 2, sm: 4 } }}>
@@ -316,17 +323,18 @@ const FlightMessageSystem: React.FC = () => {
           backdropFilter: 'blur(10px)',
           border: '1px solid rgba(0, 0, 0, 0.08)',
           borderRadius: 3,
-          overflow: 'hidden',
-          minHeight: '70vh',
-          maxHeight: '95vh',
+          overflow: 'visible',
+          minHeight: 'auto',
+          height: 'auto',
           display: 'flex',
           flexDirection: 'column'
         }}
       >
         <Box sx={{ 
           p: 3, 
-          flex: 1, 
-          overflow: 'hidden',
+          minHeight: 'auto',
+          height: 'auto',
+          overflow: 'visible',
           position: 'relative',
         }}>
           {renderContent()}
