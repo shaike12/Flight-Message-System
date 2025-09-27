@@ -116,7 +116,12 @@ export const en = {
     selectCsvFile: 'Select CSV File',
     csvFileOnly: 'Please select CSV file only',
     csvUploadOrIndividual: 'CSV file upload or individual sending:',
-    recordsInFile: 'records in file'
+    recordsInFile: 'records in file',
+    messageSending: 'Message Sending',
+    bulkMessageConfirmation: 'Confirm Bulk Message Sending',
+    individualMessageConfirmation: 'Confirm Individual Message Sending',
+    createMessageFirst: 'Please create a message before sending messages',
+    createMessageInFlightsTab: 'Please create a message in the Flights tab before sending bulk messages'
   },
 
   // Template Manager

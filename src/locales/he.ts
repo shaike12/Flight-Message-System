@@ -116,7 +116,12 @@ export const he = {
     selectCsvFile: 'בחר קובץ CSV',
     csvFileOnly: 'אנא בחר קובץ CSV בלבד',
     csvUploadOrIndividual: 'העלאת קובץ CSV או שליחה למספר יחיד:',
-    recordsInFile: 'רשומות בקובץ'
+    recordsInFile: 'רשומות בקובץ',
+    messageSending: 'שליחת הודעות',
+    bulkMessageConfirmation: 'אישור שליחת הודעות המוניות',
+    individualMessageConfirmation: 'אישור שליחת הודעה יחידה',
+    createMessageFirst: 'אנא צור הודעה לפני שליחת הודעות',
+    createMessageInFlightsTab: 'אנא צור הודעה בלשונית הטיסות לפני שליחת הודעות המוניות'
   },
 
   // Template Manager
