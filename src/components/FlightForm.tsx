@@ -1243,7 +1243,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                   <Button
                     onClick={handleAddRoute}
                     variant="contained"
-                    startIcon={<MapPin size={18} style={{ marginLeft: '8px' }} />}
+                    startIcon={<MapPin size={18} />}
                     sx={{
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       borderRadius: 2,
@@ -1962,7 +1962,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent'
                     }}>
-                      בחירת תבנית
+                      {t.flightForm.templateSelection}
                     </Typography>
                     <Typography variant="caption" sx={{ 
                       color: 'text.secondary',
@@ -2369,7 +2369,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent'
                     }}>
-                      שליחת הודעות
+                      {t.flightForm.messageSending}
                     </Typography>
                     <Typography variant="caption" sx={{ 
                       color: 'text.secondary',
