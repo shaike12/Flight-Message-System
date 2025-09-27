@@ -3,6 +3,8 @@ import { useAppSelector } from '../store/hooks';
 import { BarChart3, MessageSquare, Send, Clock, TrendingUp, Users, Plane, FileText, UserCheck, Activity, Database, Calendar } from 'lucide-react';
 import { GeneratedMessage, Flight, MessageTemplate } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
+import { createSelector } from '@reduxjs/toolkit';
+import { RootState } from '../store';
 import { 
   Box, 
   Card, 
@@ -24,13 +26,39 @@ import {
   Tooltip
 } from '@mui/material';
 
+// Memoized selectors to prevent unnecessary rerenders
+const selectMessages = createSelector(
+  (state: RootState) => state.messages,
+  (messagesState) => messagesState
+);
+
+const selectFlights = createSelector(
+  (state: RootState) => state.flights,
+  (flightsState) => flightsState
+);
+
+const selectTemplates = createSelector(
+  (state: RootState) => state.templates,
+  (templatesState) => templatesState
+);
+
+const selectFlightRoutes = createSelector(
+  (state: RootState) => state.flightRoutes,
+  (flightRoutesState) => flightRoutesState
+);
+
+const selectCities = createSelector(
+  (state: RootState) => state.cities,
+  (citiesState) => citiesState
+);
+
 const Statistics: React.FC = () => {
   const { t } = useLanguage();
-  const { messages } = useAppSelector(useMemo(() => (state) => state.messages, []));
-  const { flights } = useAppSelector(useMemo(() => (state) => state.flights, []));
-  const { templates } = useAppSelector(useMemo(() => (state) => state.templates, []));
-  const { routes: flightRoutes } = useAppSelector(useMemo(() => (state) => state.flightRoutes, []));
-  const { cities } = useAppSelector(useMemo(() => (state) => state.cities, []));
+  const { messages } = useAppSelector(selectMessages);
+  const { flights } = useAppSelector(selectFlights);
+  const { templates } = useAppSelector(selectTemplates);
+  const { routes: flightRoutes } = useAppSelector(selectFlightRoutes);
+  const { cities } = useAppSelector(selectCities);
 
   // Calculate statistics
   const totalMessages = messages.length;

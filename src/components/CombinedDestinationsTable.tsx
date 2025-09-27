@@ -5,6 +5,8 @@ import { addFlightRoute, updateFlightRoute, deleteFlightRoute, fetchFlightRoutes
 import { City, FlightRoute } from '../types';
 import { MapPin, Plane, Plus, Edit2, Trash2, Save, X, Search, Info, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { createSelector } from '@reduxjs/toolkit';
+import { RootState } from '../store';
 import { 
   Box, 
   Card, 
@@ -47,10 +49,16 @@ interface CombinedRow {
   data: City | FlightRoute;
 }
 
+// Memoized selector to prevent unnecessary rerenders
+const selectFlightRoutesData = createSelector(
+  (state: RootState) => state.flightRoutes,
+  (flightRoutesState) => flightRoutesState
+);
+
 const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ cities }) => {
   const { t, language } = useLanguage();
   const dispatch = useAppDispatch();
-  const { routes: flightRoutes, loading, error } = useAppSelector(useMemo(() => (state) => state.flightRoutes, []));
+  const { routes: flightRoutes, loading, error } = useAppSelector(selectFlightRoutesData);
 
   // Fetch flight routes on component mount
   useEffect(() => {

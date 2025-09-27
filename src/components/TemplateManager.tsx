@@ -12,20 +12,25 @@ import { MessageTemplate } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Edit2, Trash2, Power, PowerOff } from 'lucide-react';
 import { Button, TextField, Checkbox, FormControlLabel, Box, Typography, Paper, Chip, IconButton, Modal, Fade, Backdrop, Stack, Divider, Tooltip } from '@mui/material';
+import { createSelector } from '@reduxjs/toolkit';
+import { RootState } from '../store';
+
+// Memoized selector to prevent unnecessary rerenders
+const selectTemplateData = createSelector(
+  (state: RootState) => state.templates.templates,
+  (state: RootState) => state.templates.loading,
+  (state: RootState) => state.customVariables.variables,
+  (templates, loading, customVariables) => ({
+    templates,
+    loading,
+    customVariables,
+  })
+);
 
 const TemplateManager: React.FC = () => {
   const dispatch = useAppDispatch();
   const { t, language } = useLanguage();
-  const { templates, loading, customVariables } = useAppSelector(
-    useMemo(
-      () => (state) => ({
-        templates: state.templates.templates,
-        loading: state.templates.loading,
-        customVariables: state.customVariables.variables,
-      }),
-      []
-    )
-  );
+  const { templates, loading, customVariables } = useAppSelector(selectTemplateData);
 
   const [showForm, setShowForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);

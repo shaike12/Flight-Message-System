@@ -2648,7 +2648,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                     }
                   }}
                 >
-                  {isSending ? 'שולח הודעות...' : 'שלח הודעה'}
+                  {isSending ? 'שולח הודעות...' : (selectedFile ? 'שלח הודעות' : 'שלח הודעה')}
                 </Button>
               </Box>
 
