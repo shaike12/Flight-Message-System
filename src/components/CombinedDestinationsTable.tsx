@@ -506,8 +506,23 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
         }}>
 
           {/* Combined Table */}
-          <Paper sx={{ borderRadius: 3, overflow: 'hidden' }}>
-            {/* Fixed Table Header */}
+          <TableContainer 
+            component={Paper} 
+            sx={{ 
+              borderRadius: 3, 
+              overflow: 'auto',
+              maxHeight: { xs: '60vh', sm: '70vh' },
+              '&::-webkit-scrollbar': {
+                display: 'none',
+              },
+              '&::-ms-overflow-style': {
+                display: 'none',
+              },
+              '&': {
+                scrollbarWidth: 'none',
+              },
+            }}
+          >
             <Table sx={{ minWidth: { xs: 600, sm: 800 } }}>
               <TableHead sx={{ backgroundColor: '#f8fafc', position: 'sticky', top: 0, zIndex: 1 }}>
                 <TableRow>
@@ -826,7 +841,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
 
               </TableBody>
             </Table>
-          </Paper>
+          </TableContainer>
         </Box>
       </Card>
 
