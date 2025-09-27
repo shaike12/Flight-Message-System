@@ -535,7 +535,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                     fontSize: { xs: '0.875rem', sm: '1rem' },
                     padding: { xs: '8px 4px', sm: '16px' }
                   }}>
-                    מספר טיסה
+                    {t.destinationsTable.flightNumber}
                   </TableCell>
                   <TableCell sx={{ 
                     fontWeight: 'bold', 
@@ -565,7 +565,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                     fontSize: { xs: '0.875rem', sm: '1rem' },
                     padding: { xs: '8px 4px', sm: '16px' }
                   }}>
-                    חברת תעופה
+                    {t.destinationsTable.airline}
                   </TableCell>
                   <TableCell sx={{ 
                     fontWeight: 'bold', 
@@ -575,7 +575,7 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
                     fontSize: { xs: '0.875rem', sm: '1rem' },
                     padding: { xs: '8px 4px', sm: '16px' }
                   }}>
-                    פעולות
+                    {t.destinationsTable.actions}
                   </TableCell>
                 </TableRow>
               </TableHead>
