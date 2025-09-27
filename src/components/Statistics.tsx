@@ -26,39 +26,13 @@ import {
   Tooltip
 } from '@mui/material';
 
-// Memoized selectors to prevent unnecessary rerenders
-const selectMessages = createSelector(
-  (state: RootState) => state.messages,
-  (messagesState) => messagesState
-);
-
-const selectFlights = createSelector(
-  (state: RootState) => state.flights,
-  (flightsState) => flightsState
-);
-
-const selectTemplates = createSelector(
-  (state: RootState) => state.templates,
-  (templatesState) => templatesState
-);
-
-const selectFlightRoutes = createSelector(
-  (state: RootState) => state.flightRoutes,
-  (flightRoutesState) => flightRoutesState
-);
-
-const selectCities = createSelector(
-  (state: RootState) => state.cities,
-  (citiesState) => citiesState
-);
-
 const Statistics: React.FC = () => {
   const { t } = useLanguage();
-  const { messages } = useAppSelector(selectMessages);
-  const { flights } = useAppSelector(selectFlights);
-  const { templates } = useAppSelector(selectTemplates);
-  const { routes: flightRoutes } = useAppSelector(selectFlightRoutes);
-  const { cities } = useAppSelector(selectCities);
+  const { messages } = useAppSelector((state) => state.messages);
+  const { flights } = useAppSelector((state) => state.flights);
+  const { templates } = useAppSelector((state) => state.templates);
+  const { routes: flightRoutes } = useAppSelector((state) => state.flightRoutes);
+  const { cities } = useAppSelector((state) => state.cities);
 
   // Calculate statistics
   const totalMessages = messages.length;

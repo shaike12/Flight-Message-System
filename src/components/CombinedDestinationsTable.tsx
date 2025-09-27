@@ -49,16 +49,10 @@ interface CombinedRow {
   data: City | FlightRoute;
 }
 
-// Memoized selector to prevent unnecessary rerenders
-const selectFlightRoutesData = createSelector(
-  (state: RootState) => state.flightRoutes,
-  (flightRoutesState) => flightRoutesState
-);
-
 const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ cities }) => {
   const { t, language } = useLanguage();
   const dispatch = useAppDispatch();
-  const { routes: flightRoutes, loading, error } = useAppSelector(selectFlightRoutesData);
+  const { routes: flightRoutes, loading, error } = useAppSelector((state) => state.flightRoutes);
 
   // Fetch flight routes on component mount
   useEffect(() => {
