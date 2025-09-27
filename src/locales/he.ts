@@ -121,7 +121,29 @@ export const he = {
     bulkMessageConfirmation: 'אישור שליחת הודעות המוניות',
     individualMessageConfirmation: 'אישור שליחת הודעה יחידה',
     createMessageFirst: 'אנא צור הודעה לפני שליחת הודעות',
-    createMessageInFlightsTab: 'אנא צור הודעה בלשונית הטיסות לפני שליחת הודעות המוניות'
+    createMessageInFlightsTab: 'אנא צור הודעה בלשונית הטיסות לפני שליחת הודעות המוניות',
+    phoneNumber: 'מספר טלפון',
+    emailAddress: 'כתובת אימייל',
+    sendSms: 'שלח SMS',
+    sendEmail: 'שלח אימייל (לא זמין כרגע)',
+    totalContacts: 'סה"כ אנשי קשר',
+    emailNotAvailable: 'אימייל (לא זמין)',
+    totalMessages: 'סה״כ הודעות',
+    emailsSent: 'אימיילים נשלחו',
+    errors: 'שגיאות',
+    selected: 'נבחר',
+    pleaseSelectCsvOnly: 'אנא בחר קובץ CSV בלבד',
+    pleaseEnterPhoneForSms: 'אנא הזן מספר טלפון לשליחת SMS',
+    pleaseEnterEmailForEmail: 'אנא הזן כתובת אימייל לשליחת אימייל',
+    pleaseSelectAtLeastOneType: 'אנא בחר לפחות סוג הודעה אחד (SMS או אימייל)',
+    smsSendingFailed: 'שליחת SMS נכשלה',
+    emailSendingFailed: 'שליחת אימייל נכשלה',
+    flightMessageSubject: 'הודעת טיסה - ELAL',
+    errorSendingMessages: 'שגיאה בשליחת ההודעות',
+    errorCreatingMessage: 'שגיאה ביצירת ההודעה',
+    error: 'שגיאה',
+    loadingFlightRoutes: 'טוען מסלולי טיסות...',
+    errorLoadingFlightRoutes: 'שגיאה בטעינת מסלולי הטיסות'
   },
 
   // Template Manager
@@ -166,7 +188,11 @@ export const he = {
       counterOpenTime: 'שעת פתיחת דלפקים',
       counterCloseTime: 'שעת סגירת דלפקים',
       internetCode: 'קוד אינטרנט'
-    }
+    },
+    editTemplate: 'ערוך תבנית',
+    deleteTemplate: 'מחק תבנית',
+    clickOrDragToAdd: 'לחץ או גרור כדי להוסיף לתבנית',
+    clickParametersOrDrag: 'לחץ על פרמטרים או גרור אותם לכאן...'
   },
 
   // Destinations Table
@@ -211,7 +237,14 @@ export const he = {
     saveChanges: 'שמור שינויים',
     editRoute: 'עריכת מסלול טיסה',
     addRouteDescription: 'הוסף מסלול טיסה חדש למערכת',
-    editRouteDescription: 'ערוך פרטי מסלול הטיסה'
+    editRouteDescription: 'ערוך פרטי מסלול הטיסה',
+    flightNumberPlaceholder: 'מספר טיסה',
+    departureCodePlaceholder: 'קוד יציאה (TLV)',
+    departureHebrewPlaceholder: 'יציאה (בעברית)',
+    arrivalCodePlaceholder: 'קוד עיר נחיתה (JFK)',
+    arrivalHebrewPlaceholder: 'שם עברית',
+    telAvivPlaceholder: 'תל אביב',
+    newYorkPlaceholder: 'ניו יורק'
   },
 
   // Message History

@@ -121,7 +121,29 @@ export const en = {
     bulkMessageConfirmation: 'Confirm Bulk Message Sending',
     individualMessageConfirmation: 'Confirm Individual Message Sending',
     createMessageFirst: 'Please create a message before sending messages',
-    createMessageInFlightsTab: 'Please create a message in the Flights tab before sending bulk messages'
+    createMessageInFlightsTab: 'Please create a message in the Flights tab before sending bulk messages',
+    phoneNumber: 'Phone Number',
+    emailAddress: 'Email Address',
+    sendSms: 'Send SMS',
+    sendEmail: 'Send Email (Currently Unavailable)',
+    totalContacts: 'Total Contacts',
+    emailNotAvailable: 'Email (Not Available)',
+    totalMessages: 'Total Messages',
+    emailsSent: 'Emails Sent',
+    errors: 'Errors',
+    selected: 'Selected',
+    pleaseSelectCsvOnly: 'Please select CSV file only',
+    pleaseEnterPhoneForSms: 'Please enter phone number for SMS sending',
+    pleaseEnterEmailForEmail: 'Please enter email address for email sending',
+    pleaseSelectAtLeastOneType: 'Please select at least one message type (SMS or Email)',
+    smsSendingFailed: 'SMS sending failed',
+    emailSendingFailed: 'Email sending failed',
+    flightMessageSubject: 'Flight Message - ELAL',
+    errorSendingMessages: 'Error sending messages',
+    errorCreatingMessage: 'Error creating message',
+    error: 'Error',
+    loadingFlightRoutes: 'Loading flight routes...',
+    errorLoadingFlightRoutes: 'Error loading flight routes'
   },
 
   // Template Manager
@@ -166,7 +188,11 @@ export const en = {
       counterOpenTime: 'Counter Opening Time',
       counterCloseTime: 'Counter Closing Time',
       internetCode: 'Internet Code'
-    }
+    },
+    editTemplate: 'Edit Template',
+    deleteTemplate: 'Delete Template',
+    clickOrDragToAdd: 'Click or drag to add to template',
+    clickParametersOrDrag: 'Click on parameters or drag them here...'
   },
 
   // Destinations Table
@@ -211,7 +237,14 @@ export const en = {
     saveChanges: 'Save Changes',
     editRoute: 'Edit Flight Route',
     addRouteDescription: 'Add a new flight route to the system',
-    editRouteDescription: 'Edit flight route details'
+    editRouteDescription: 'Edit flight route details',
+    flightNumberPlaceholder: 'Flight Number',
+    departureCodePlaceholder: 'Departure Code (TLV)',
+    departureHebrewPlaceholder: 'Departure (Hebrew)',
+    arrivalCodePlaceholder: 'Arrival City Code (JFK)',
+    arrivalHebrewPlaceholder: 'Hebrew Name',
+    telAvivPlaceholder: 'Tel Aviv',
+    newYorkPlaceholder: 'New York'
   },
 
   // Message History
