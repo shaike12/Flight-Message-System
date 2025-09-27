@@ -61,9 +61,27 @@ interface SentMessage {
   sentAt: string;
   templateId: string;
   templateName: string;
+  // New fields for sending statistics
+  sendingStats?: {
+    totalRecipients: number;
+    smsSent: number;
+    emailSent: number;
+    smsSuccess: number;
+    emailSuccess: number;
+    smsFailed: number;
+    emailFailed: number;
+    phoneNumbers: string[];
+    emails: string[];
+    errors: string[];
+    isBulkSend: boolean;
+  };
 }
 
-const SentMessages: React.FC = () => {
+interface SentMessagesProps {
+  onAddMessage?: (message: SentMessage) => void;
+}
+
+const SentMessages: React.FC<SentMessagesProps> = ({ onAddMessage }) => {
   const { t, language } = useLanguage();
   const { userData } = useAuth();
   const [sentMessages, setSentMessages] = useState<SentMessage[]>([]);
@@ -76,6 +94,19 @@ const SentMessages: React.FC = () => {
   const [searchFlightNumber, setSearchFlightNumber] = useState('');
   const [searchDate, setSearchDate] = useState('');
   const [filteredMessages, setFilteredMessages] = useState<SentMessage[]>([]);
+
+  // Function to add a new message (called from FlightForm)
+  const addMessage = (message: SentMessage) => {
+    setSentMessages(prev => [message, ...prev]);
+  };
+
+  // Expose the addMessage function to parent component
+  React.useEffect(() => {
+    if (onAddMessage) {
+      // This is a workaround to expose the function to parent
+      (window as any).addSentMessage = addMessage;
+    }
+  }, [onAddMessage]);
 
   // Load sent messages from Firebase
   useEffect(() => {
@@ -535,6 +566,12 @@ const SentMessages: React.FC = () => {
                       </Stack>
                     </TableCell>
                     <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>
+                      <Stack direction="row" alignItems="center" spacing={1} justifyContent="center">
+                        <MessageSquare size={16} />
+                        <span>{language === 'he' ? 'סטטיסטיקות שליחה' : 'Sending Stats'}</span>
+                      </Stack>
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>
                       {t.sentMessages.table.actions}
                     </TableCell>
                   </TableRow>
@@ -542,7 +579,7 @@ const SentMessages: React.FC = () => {
                 <TableBody>
                   {filteredMessages.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} sx={{ textAlign: 'center', py: 4 }}>
+                      <TableCell colSpan={11} sx={{ textAlign: 'center', py: 4 }}>
                         <Typography variant="body1" color="text.secondary">
                           {searchFlightNumber || searchDate 
                             ? (language === 'he' ? 'לא נמצאו תוצאות לחיפוש' : 'No search results found')
@@ -587,6 +624,55 @@ const SentMessages: React.FC = () => {
                         </Stack>
                       </TableCell>
                       <TableCell sx={{ textAlign: 'center' }}>{formatDate(message.sentAt)}</TableCell>
+                      <TableCell sx={{ textAlign: 'center' }}>
+                        {message.sendingStats ? (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'center' }}>
+                            <Chip 
+                              label={`${message.sendingStats.totalRecipients} ${language === 'he' ? 'נמענים' : 'recipients'}`}
+                              size="small"
+                              sx={{
+                                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                color: 'white',
+                                fontSize: '0.7rem',
+                                height: 20
+                              }}
+                            />
+                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                              <Chip 
+                                label={`SMS: ${message.sendingStats.smsSuccess}/${message.sendingStats.smsSent}`}
+                                size="small"
+                                sx={{
+                                  background: message.sendingStats.smsSuccess === message.sendingStats.smsSent 
+                                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                                    : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                                  color: 'white',
+                                  fontSize: '0.6rem',
+                                  height: 18
+                                }}
+                              />
+                              {message.sendingStats.emailSent > 0 && (
+                                <Chip 
+                                  label={`Email: ${message.sendingStats.emailSuccess}/${message.sendingStats.emailSent}`}
+                                  size="small"
+                                  sx={{
+                                    background: message.sendingStats.emailSuccess === message.sendingStats.emailSent 
+                                      ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                                      : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                                    color: 'white',
+                                    fontSize: '0.6rem',
+                                    height: 18
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                            {language === 'he' ? 'ללא נתונים' : 'No data'}
+                          </Typography>
+                        )}
+                      </TableCell>
                       <TableCell sx={{ textAlign: 'center' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
                           <Tooltip title={t.sentMessages.table.view}>
@@ -729,6 +815,83 @@ const SentMessages: React.FC = () => {
                 <Stack spacing={1}>
                   <Typography><strong>{t.sentMessages.table.sentBy}:</strong> {selectedMessage.sentBy}</Typography>
                   <Typography><strong>{t.sentMessages.table.sentAt}:</strong> {formatDate(selectedMessage.sentAt)}</Typography>
+                  
+                  {selectedMessage.sendingStats && (
+                    <>
+                      <Divider sx={{ my: 1 }} />
+                      <Typography variant="h6" sx={{ mb: 1, color: 'primary.main' }}>
+                        {language === 'he' ? 'סטטיסטיקות שליחה' : 'Sending Statistics'}
+                      </Typography>
+                      <Typography><strong>{language === 'he' ? 'סה״כ נמענים:' : 'Total Recipients:'}</strong> {selectedMessage.sendingStats.totalRecipients}</Typography>
+                      <Typography><strong>{language === 'he' ? 'SMS נשלחו:' : 'SMS Sent:'}</strong> {selectedMessage.sendingStats.smsSent}</Typography>
+                      <Typography><strong>{language === 'he' ? 'SMS הצליחו:' : 'SMS Successful:'}</strong> {selectedMessage.sendingStats.smsSuccess}</Typography>
+                      {selectedMessage.sendingStats.emailSent > 0 && (
+                        <>
+                          <Typography><strong>{language === 'he' ? 'אימיילים נשלחו:' : 'Emails Sent:'}</strong> {selectedMessage.sendingStats.emailSent}</Typography>
+                          <Typography><strong>{language === 'he' ? 'אימיילים הצליחו:' : 'Emails Successful:'}</strong> {selectedMessage.sendingStats.emailSuccess}</Typography>
+                        </>
+                      )}
+                      
+                      {selectedMessage.sendingStats.phoneNumbers && selectedMessage.sendingStats.phoneNumbers.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                            {language === 'he' ? 'מספרי טלפון שנשלחו אליהם:' : 'Phone Numbers Sent To:'}
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {selectedMessage.sendingStats.phoneNumbers.map((phone: string, index: number) => (
+                              <Chip 
+                                key={index}
+                                label={phone}
+                                size="small"
+                                sx={{
+                                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                  color: 'white',
+                                  fontSize: '0.75rem'
+                                }}
+                              />
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
+                      
+                      {selectedMessage.sendingStats.emails && selectedMessage.sendingStats.emails.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                            {language === 'he' ? 'כתובות אימייל שנשלחו אליהן:' : 'Email Addresses Sent To:'}
+                          </Typography>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            {selectedMessage.sendingStats.emails.map((email: string, index: number) => (
+                              <Chip 
+                                key={index}
+                                label={email}
+                                size="small"
+                                sx={{
+                                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                  color: 'white',
+                                  fontSize: '0.75rem'
+                                }}
+                              />
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
+                      
+                      {selectedMessage.sendingStats.errors && selectedMessage.sendingStats.errors.length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: 'error.main' }}>
+                            {language === 'he' ? 'שגיאות:' : 'Errors:'}
+                          </Typography>
+                          <Box sx={{ maxHeight: 150, overflow: 'auto' }}>
+                            {selectedMessage.sendingStats.errors.map((error: string, index: number) => (
+                              <Typography key={index} variant="body2" color="error.main" sx={{ fontSize: '0.8rem', mb: 0.5 }}>
+                                • {error}
+                              </Typography>
+                            ))}
+                          </Box>
+                        </Box>
+                      )}
+                    </>
+                  )}
                 </Stack>
               </Box>
             </Stack>

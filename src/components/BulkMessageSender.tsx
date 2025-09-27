@@ -433,7 +433,7 @@ const BulkMessageSender: React.FC<BulkMessageSenderProps> = ({ onClose, messageC
           disabled={isUploading || (!selectedFile && !phoneNumber && !email)}
           fullWidth
         >
-          {isUploading ? 'שולח הודעות...' : (selectedFile ? 'שלח הודעות המוניות' : 'שלח הודעה יחידה')}
+          {isUploading ? 'שולח הודעות...' : 'שלח הודעה'}
         </Button>
 
         {isUploading && (

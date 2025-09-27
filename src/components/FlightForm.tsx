@@ -138,6 +138,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [previewMessage, setPreviewMessage] = useState<{hebrew: string; english: string; french?: string} | null>(null);
   const [csvRecordCount, setCsvRecordCount] = useState<number | null>(null);
+  const [showIndividualFields, setShowIndividualFields] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Date picker states
@@ -688,75 +689,6 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     handleDatePickerClose();
   };
 
-  // Handle sending message
-  const handleSendMessage = async () => {
-    if (!generatedText || !generatedEnglishText) {
-      setError('אנא צור הודעה לפני השליחה');
-      return;
-    }
-
-    if (!userData?.name) {
-      setError('שם המשתמש לא זמין');
-      return;
-    }
-
-    try {
-      // Create message object
-      const sentMessage = {
-        flightNumber: formData.flightNumber,
-        departureCity: formData.departureCity,
-        arrivalCity: formData.arrivalCity,
-        originalDate: formData.originalDate,
-        newDate: formData.newDate,
-        originalTime: formData.originalTime,
-        newTime: formData.newTime,
-        hebrewMessage: generatedText,
-        englishMessage: generatedEnglishText,
-        frenchMessage: generatedFrenchText,
-        sentBy: userData.name,
-        sentAt: new Date().toISOString(),
-        templateId: selectedTemplate,
-        templateName: selectedTemplateData?.name || 'Unknown Template'
-      };
-
-      // Save to Firebase
-      const messagesRef = collection(db, 'sentMessages');
-      await addDoc(messagesRef, sentMessage);
-
-      // Also save to localStorage as backup
-      const existingMessages = JSON.parse(localStorage.getItem('sentMessages') || '[]');
-      existingMessages.unshift({ id: Date.now().toString(), ...sentMessage });
-      localStorage.setItem('sentMessages', JSON.stringify(existingMessages));
-
-      // Show success message
-      setError(null);
-      alert(t.flightForm.messageSent);
-
-      // Clear form after sending
-      setFormData({
-        flightNumber: '',
-        newFlightNumber: '',
-        originalTime: currentTime,
-        newTime: currentTime,
-        originalDate: currentDate,
-        newDate: currentDate,
-        departureCity: '',
-        arrivalCity: '',
-        loungeOpenTime: '',
-        counterOpenTime: '',
-        counterCloseTime: '',
-        internetCode: '',
-      });
-      setSelectedTemplate('');
-      setGeneratedText('');
-      setGeneratedEnglishText('');
-      setGeneratedFrenchText('');
-
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setError(t.flightForm.messageSentError);
-    }
-  };
 
   // Message sending functions
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -765,6 +697,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
         setSelectedFile(file);
         setError(null);
+        setShowIndividualFields(false); // Hide individual fields when CSV is selected
         
         // Count CSV records
         const reader = new FileReader();
@@ -821,6 +754,45 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
     setShowPreviewDialog(true);
   };
 
+  // Function to add message to sent messages report
+  const addToSentMessages = async (sendingStats: any) => {
+    try {
+      const messageData = {
+        flightNumber: formData.flightNumber,
+        departureCity: formData.departureCity,
+        arrivalCity: formData.arrivalCity,
+        originalDate: formData.originalDate,
+        newDate: formData.newDate,
+        originalTime: formData.originalTime,
+        newTime: formData.newTime,
+        hebrewMessage: generatedText,
+        englishMessage: generatedEnglishText,
+        frenchMessage: generatedFrenchText,
+        sentBy: userData?.name || userData?.email || 'Unknown',
+        sentAt: new Date().toISOString(),
+        templateId: selectedTemplate,
+        templateName: templates.find(t => t.id === selectedTemplate)?.name || 'Unknown',
+        sendingStats: sendingStats
+      };
+
+      // Add to Firebase
+      await addDoc(collection(db, 'sentMessages'), messageData);
+
+      // Also add to local storage and call the global function if available
+      if ((window as any).addSentMessage) {
+        (window as any).addSentMessage({ id: Date.now().toString(), ...messageData });
+      }
+
+      // Save to localStorage as backup
+      const existingMessages = JSON.parse(localStorage.getItem('sentMessages') || '[]');
+      existingMessages.unshift({ id: Date.now().toString(), ...messageData });
+      localStorage.setItem('sentMessages', JSON.stringify(existingMessages));
+
+    } catch (error) {
+      console.error('Error adding message to sent messages:', error);
+    }
+  };
+
   const handleConfirmSend = async () => {
     setShowPreviewDialog(false);
     setIsSending(true);
@@ -832,6 +804,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       
       let response;
       let data;
+      let sendingStats: any = null;
       
       if (selectedFile) {
         // Bulk sending via CSV
@@ -851,6 +824,24 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
         if (data.success) {
           setSendResult(data.results);
           setShowSendResult(true);
+          
+          // Create sending stats for bulk send
+          sendingStats = {
+            totalRecipients: data.results.total,
+            smsSent: data.results.smsSent,
+            emailSent: data.results.emailSent,
+            smsSuccess: data.results.smsSent - (data.results.errors?.filter((e: string) => e.includes('SMS')).length || 0),
+            emailSuccess: data.results.emailSent - (data.results.errors?.filter((e: string) => e.includes('Email')).length || 0),
+            smsFailed: data.results.errors?.filter((e: string) => e.includes('SMS')).length || 0,
+            emailFailed: data.results.errors?.filter((e: string) => e.includes('Email')).length || 0,
+            phoneNumbers: data.results.phoneNumbers || [], // Phone numbers from CSV
+            emails: data.results.emails || [], // Emails from CSV
+            errors: data.results.errors || [],
+            isBulkSend: true
+          };
+          
+          // Add to sent messages
+          await addToSentMessages(sendingStats);
         } else {
           setError(data.error || 'שגיאה בשליחת ההודעות');
         }
@@ -858,6 +849,8 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
         // Individual sending
         let successCount = 0;
         let errorMessages = [];
+        let smsSuccess = 0;
+        let emailSuccess = 0;
         
         if (sendSMS && phoneNumber) {
           try {
@@ -875,6 +868,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
             const smsData = await smsResponse.json();
             if (smsData.success) {
               successCount++;
+              smsSuccess = 1;
             } else {
               errorMessages.push(`SMS נכשל: ${smsData.error}`);
             }
@@ -900,6 +894,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
             const emailData = await emailResponse.json();
             if (emailData.success) {
               successCount++;
+              emailSuccess = 1;
             } else {
               errorMessages.push(`אימייל נכשל: ${emailData.error}`);
             }
@@ -909,13 +904,32 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
         }
         
         if (successCount > 0) {
-          setSendResult({
+          const result = {
             total: 1,
             smsSent: sendSMS && phoneNumber ? 1 : 0,
             emailSent: sendEmail && email ? 1 : 0,
             errors: errorMessages
-          });
+          };
+          setSendResult(result);
           setShowSendResult(true);
+          
+          // Create sending stats for individual send
+          sendingStats = {
+            totalRecipients: 1,
+            smsSent: sendSMS && phoneNumber ? 1 : 0,
+            emailSent: sendEmail && email ? 1 : 0,
+            smsSuccess: smsSuccess,
+            emailSuccess: emailSuccess,
+            smsFailed: (sendSMS && phoneNumber) ? (1 - smsSuccess) : 0,
+            emailFailed: (sendEmail && email) ? (1 - emailSuccess) : 0,
+            phoneNumbers: phoneNumber ? [phoneNumber] : [],
+            emails: email ? [email] : [],
+            errors: errorMessages,
+            isBulkSend: false
+          };
+          
+          // Add to sent messages
+          await addToSentMessages(sendingStats);
         } else {
           setError(errorMessages.join(', ') || 'שגיאה בשליחת ההודעות');
         }
@@ -1902,39 +1916,6 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 {t.flightForm.clearFields}
                 </Button>
                 
-                {/* Send Message Button */}
-                <Button
-                  variant="contained"
-                  startIcon={<Send size={18} />}
-                  onClick={handleSendMessage}
-                  disabled={!generatedText || !generatedEnglishText || isGenerating}
-                  sx={{
-                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                    color: 'white',
-                    borderRadius: 2,
-                    px: 3,
-                    py: 1.5,
-                    fontWeight: 'bold',
-                    textTransform: 'none',
-                    fontSize: '0.9rem',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #0ea472 0%, #047857 100%)',
-                      boxShadow: '0 6px 16px rgba(16, 185, 129, 0.4)',
-                    },
-                    '&:disabled': {
-                      background: 'rgba(0, 0, 0, 0.12)',
-                      color: 'rgba(0, 0, 0, 0.26)',
-                      boxShadow: 'none'
-                    },
-                    '& .MuiButton-startIcon': { 
-                      marginRight: '8px',
-                      marginLeft: 0
-                    }
-                  }}
-                >
-                  {t.flightForm.sendMessage}
-                </Button>
               </Box>
             </CardContent>
           </Card>
@@ -2452,12 +2433,18 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                   העלאת קובץ CSV או שליחה למספר יחיד:
                 </Typography>
                 
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
                   <Button
                     variant="outlined"
                     component="label"
                     startIcon={<CloudUpload />}
                     size="small"
+                    sx={{
+                      '& .MuiButton-startIcon': {
+                        marginRight: '8px',
+                        marginLeft: '8px'
+                      }
+                    }}
                   >
                     בחר קובץ CSV
                     <input
@@ -2466,8 +2453,27 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                       hidden
                       accept=".csv"
                       onChange={handleFileSelect}
+                      
                     />
                   </Button>
+                  
+                  {!selectedFile && (
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => setShowIndividualFields(!showIndividualFields)}
+                      sx={{
+                        borderColor: '#667eea',
+                        color: '#667eea',
+                        '&:hover': {
+                          borderColor: '#5a6fd8',
+                          backgroundColor: 'rgba(102, 126, 234, 0.05)',
+                        }
+                      }}
+                    >
+                      {showIndividualFields ? 'הסתר שדות יחיד' : 'הודעה למספר בודד'}
+                    </Button>
+                  )}
                   
                   {selectedFile && (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -2486,6 +2492,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                         onClick={() => {
                           setSelectedFile(null);
                           setCsvRecordCount(null);
+                          setShowIndividualFields(true); // Show individual fields when CSV is removed
                           // Reset the file input
                           if (fileInputRef.current) {
                             fileInputRef.current.value = '';
@@ -2504,98 +2511,109 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                   )}
                 </Box>
 
-                {/* Individual Contact Fields */}
-                <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' }, mt: 2 }}>
-                  <Box sx={{ flex: 1, maxWidth: 300 }}>
-                    {phoneError && (
-                      <Alert severity="error" sx={{ mb: 1, borderRadius: 2, fontSize: '0.875rem' }}>
-                        {phoneError}
-                      </Alert>
-                    )}
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="מספר טלפון"
-                      value={phoneNumber}
-                      onChange={handlePhoneChange}
-                      placeholder="0501234567"
-                      error={!!phoneError}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          direction: 'rtl',
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: phoneError ? '#d32f2f' : '#667eea',
+                {/* Individual Contact Fields - Only show when requested */}
+                {showIndividualFields && !selectedFile && (
+                  <Box sx={{ 
+                    display: 'flex', 
+                    gap: 2, 
+                    flexDirection: { xs: 'column', sm: 'row' }, 
+                    mt: 2,
+                    p: 2,
+                    backgroundColor: 'rgba(102, 126, 234, 0.05)',
+                    borderRadius: 2,
+                    border: '1px solid rgba(102, 126, 234, 0.1)'
+                  }}>
+                    <Box sx={{ flex: 1, maxWidth: 300 }}>
+                      {phoneError && (
+                        <Alert severity="error" sx={{ mb: 1, borderRadius: 2, fontSize: '0.875rem' }}>
+                          {phoneError}
+                        </Alert>
+                      )}
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="מספר טלפון"
+                        value={phoneNumber}
+                        onChange={handlePhoneChange}
+                        placeholder="0501234567"
+                        error={!!phoneError}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            direction: 'rtl',
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: phoneError ? '#d32f2f' : '#667eea',
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: phoneError ? '#d32f2f' : '#667eea',
+                            },
                           },
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: phoneError ? '#d32f2f' : '#667eea',
+                          '& .MuiInputLabel-root': {
+                            right: 20,
+                            left: 'auto',
+                            transformOrigin: 'top right',
+                            '&.Mui-focused': {
+                              transform: 'translate(20px, -9px) scale(0.75)',
+                            },
+                            '&.MuiFormLabel-filled': {
+                              transform: 'translate(20px, -9px) scale(0.75)',
+                            },
                           },
-                        },
-                        '& .MuiInputLabel-root': {
-                          right: 20,
-                          left: 'auto',
-                          transformOrigin: 'top right',
-                          '&.Mui-focused': {
-                            transform: 'translate(20px, -9px) scale(0.75)',
+                          '& .MuiOutlinedInput-input': {
+                            textAlign: 'right',
+                            padding: '8.5px 14px',
                           },
-                          '&.MuiFormLabel-filled': {
-                            transform: 'translate(20px, -9px) scale(0.75)',
-                          },
-                        },
-                        '& .MuiOutlinedInput-input': {
-                          textAlign: 'right',
-                          padding: '8.5px 14px',
-                        },
-                      }}
-                    />
-                  </Box>
+                        }}
+                      />
+                    </Box>
 
-                  <Box sx={{ flex: 1, maxWidth: 300 }}>
-                    {emailError && (
-                      <Alert severity="error" sx={{ mb: 1, borderRadius: 2, fontSize: '0.875rem' }}>
-                        {emailError}
-                      </Alert>
-                    )}
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="כתובת אימייל"
-                      type="email"
-                      value={email}
-                      onChange={handleEmailChange}
-                      placeholder="user@example.com"
-                      error={!!emailError}
-                      disabled={true}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          borderRadius: 2,
-                          direction: 'rtl',
-                          '&:hover .MuiOutlinedInput-notchedOutline': {
-                            borderColor: emailError ? '#d32f2f' : '#667eea',
+                    <Box sx={{ flex: 1, maxWidth: 300 }}>
+                      {emailError && (
+                        <Alert severity="error" sx={{ mb: 1, borderRadius: 2, fontSize: '0.875rem' }}>
+                          {emailError}
+                        </Alert>
+                      )}
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="כתובת אימייל"
+                        type="email"
+                        value={email}
+                        onChange={handleEmailChange}
+                        placeholder="user@example.com"
+                        error={!!emailError}
+                        disabled={true}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            direction: 'rtl',
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: emailError ? '#d32f2f' : '#667eea',
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                              borderColor: emailError ? '#d32f2f' : '#667eea',
+                            },
                           },
-                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                            borderColor: emailError ? '#d32f2f' : '#667eea',
+                          '& .MuiInputLabel-root': {
+                            right: 20,
+                            left: 'auto',
+                            transformOrigin: 'top right',
+                            '&.Mui-focused': {
+                              transform: 'translate(20px, -9px) scale(0.75)',
+                            },
+                            '&.MuiFormLabel-filled': {
+                              transform: 'translate(20px, -9px) scale(0.75)',
+                            },
                           },
-                        },
-                        '& .MuiInputLabel-root': {
-                          right: 20,
-                          left: 'auto',
-                          transformOrigin: 'top right',
-                          '&.Mui-focused': {
-                            transform: 'translate(20px, -9px) scale(0.75)',
+                          '& .MuiOutlinedInput-input': {
+                            textAlign: 'right',
+                            padding: '8.5px 14px',
                           },
-                          '&.MuiFormLabel-filled': {
-                            transform: 'translate(20px, -9px) scale(0.75)',
-                          },
-                        },
-                        '& .MuiOutlinedInput-input': {
-                          textAlign: 'right',
-                          padding: '8.5px 14px',
-                        },
-                      }}
-                    />
+                        }}
+                      />
+                    </Box>
                   </Box>
-                </Box>
+                )}
               </Box>
 
               {/* Send Button */}
@@ -2630,7 +2648,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                     }
                   }}
                 >
-                  {isSending ? 'שולח הודעות...' : (selectedFile ? 'שלח הודעות המוניות' : 'שלח הודעה יחידה')}
+                  {isSending ? 'שולח הודעות...' : 'שלח הודעה'}
                 </Button>
               </Box>
 
@@ -3063,7 +3081,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
               }
             }}
           >
-            {isSending ? 'שולח...' : (selectedFile ? 'שלח הודעות המוניות' : 'שלח הודעה יחידה')}
+            {isSending ? 'שולח...' : 'שלח הודעה'}
           </Button>
         </DialogActions>
       </Dialog>

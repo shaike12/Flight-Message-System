@@ -164,7 +164,10 @@ const FlightMessageSystem: React.FC = () => {
       case 'statistics':
         return <Statistics />;
       case 'sent-messages':
-        return <SentMessages />;
+        return <SentMessages onAddMessage={(message) => {
+          // This will be called when a new message is added
+          console.log('New message added to sent messages:', message);
+        }} />;
       case 'data-updater':
         if (userData?.role !== 'admin') {
           return (

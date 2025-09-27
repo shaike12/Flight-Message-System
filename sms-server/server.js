@@ -253,6 +253,8 @@ app.post('/send-bulk', upload.single('csvFile'), async (req, res) => {
       total: contacts.length,
       smsSent: 0,
       emailSent: 0,
+      phoneNumbers: [],
+      emails: [],
       errors: []
     };
 
@@ -267,6 +269,7 @@ app.post('/send-bulk', upload.single('csvFile'), async (req, res) => {
           const smsResult = await sendSMS(contact.phone, messageContent);
           if (smsResult.success) {
             results.smsSent++;
+            results.phoneNumbers.push(contact.phone);
           } else {
             results.errors.push(`SMS failed for ${contact.name}: ${smsResult.error}`);
           }
@@ -282,6 +285,7 @@ app.post('/send-bulk', upload.single('csvFile'), async (req, res) => {
           const emailResult = await sendEmailViaHotApi(contact.email, emailSubject, messageContent);
           if (emailResult.success) {
             results.emailSent++;
+            results.emails.push(contact.email);
           } else {
             results.errors.push(`Email failed for ${contact.name}: ${emailResult.error}`);
           }
