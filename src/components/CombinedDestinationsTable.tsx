@@ -498,42 +498,6 @@ const CombinedDestinationsTable: React.FC<CombinedDestinationsTableProps> = ({ c
             scrollbarWidth: 'none',
           },
         }}>
-          {/* Info Box */}
-          <Alert 
-            severity="info" 
-            icon={<Info size={20} />}
-            sx={{ 
-              mb: 3,
-              borderRadius: 3,
-              backgroundColor: '#f0f9ff',
-              border: '1px solid #0ea5e9',
-              '& .MuiAlert-icon': {
-                color: '#0ea5e9'
-              }
-            }}
-          >
-            <Typography variant="h6" sx={{ mb: 2, color: '#0c4a6e', fontWeight: 'bold' }}>
-              {t.destinationsTable.howItWorks}
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 2, color: '#0c4a6e' }}>
-              {t.destinationsTable.howItWorksDescription}
-            </Typography>
-            <Divider sx={{ my: 2, borderColor: '#0ea5e9' }} />
-            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1, color: '#0c4a6e' }}>
-              {t.destinationsTable.addingRoutes}
-            </Typography>
-            <Box component="ul" sx={{ pl: 2, m: 0 }}>
-              <Typography component="li" variant="body2" sx={{ mb: 1, color: '#0c4a6e' }}>
-                {t.destinationsTable.step1}
-              </Typography>
-              <Typography component="li" variant="body2" sx={{ mb: 1, color: '#0c4a6e' }}>
-                {t.destinationsTable.step2}
-              </Typography>
-              <Typography component="li" variant="body2" sx={{ color: '#0c4a6e' }}>
-                {t.destinationsTable.step3}
-              </Typography>
-            </Box>
-          </Alert>
 
           {/* Combined Table */}
           <TableContainer 
