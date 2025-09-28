@@ -692,24 +692,47 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   };
 
 
+  // Function to normalize phone numbers (add Israeli prefix if missing)
+  const normalizePhoneNumber = (phone: string): string => {
+    // Remove all non-digit characters except + at the beginning
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
+    const digitsOnly = cleanPhone.replace(/^\+/, '');
+    
+    // If it's 9 digits and starts with 2-9, add Israeli prefix
+    if (digitsOnly.length === 9 && /^[2-9]\d{8}$/.test(digitsOnly)) {
+      return `972${digitsOnly}`;
+    }
+    
+    // If it's 10 digits and starts with 0, convert to international
+    if (digitsOnly.length === 10 && digitsOnly.startsWith('0')) {
+      return `972${digitsOnly.substring(1)}`;
+    }
+    
+    // Return as is if already has proper prefix
+    return digitsOnly;
+  };
+
   // Phone number validation function
   const isValidPhoneNumber = (phone: string): boolean => {
-    // Remove all non-digit characters
-    const cleanPhone = phone.replace(/\D/g, '');
+    // Remove all non-digit characters except + at the beginning
+    const cleanPhone = phone.replace(/[^\d+]/g, '');
     
-    // Check if it's empty or too short
-    if (cleanPhone.length < 7 || cleanPhone.length > 15) {
+    // Check if it's empty
+    if (!cleanPhone || cleanPhone.length === 0) {
       return false;
     }
     
-    // Check for obviously invalid patterns
+    // Remove + if present for length checking
+    const digitsOnly = cleanPhone.replace(/^\+/, '');
+    
+    // Check for obviously invalid patterns first
     // All same digits (like 1111111111)
-    if (/^(\d)\1+$/.test(cleanPhone)) {
+    if (/^(\d)\1+$/.test(digitsOnly)) {
       return false;
     }
     
-    // Contains letters or special characters that shouldn't be in phone numbers
-    if (/[a-zA-Z]/.test(phone) && !phone.includes('-') && !phone.includes('+') && !phone.includes('(') && !phone.includes(')')) {
+    // Contains letters (should not have letters in phone numbers)
+    if (/[a-zA-Z]/.test(phone)) {
       return false;
     }
     
@@ -720,15 +743,39 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       /^123/, // Starting with 123
       /^000/, // Starting with 000
       /^111/, // Starting with 111
+      /^999/, // Starting with 999
     ];
     
     for (const pattern of invalidPatterns) {
-      if (pattern.test(cleanPhone)) {
+      if (pattern.test(digitsOnly)) {
         return false;
       }
     }
     
-    return true;
+    // Israeli phone number validation
+    if (digitsOnly.startsWith('972')) {
+      // Israeli international format: 972 + 9 digits
+      return digitsOnly.length === 12 && /^972[2-9]\d{8}$/.test(digitsOnly);
+    }
+    
+    if (digitsOnly.startsWith('0')) {
+      // Israeli local format: 0 + 9 digits
+      return digitsOnly.length === 10 && /^0[2-9]\d{8}$/.test(digitsOnly);
+    }
+    
+    // US/International phone number validation
+    if (digitsOnly.startsWith('1')) {
+      // US format: 1 + 10 digits
+      return digitsOnly.length === 11 && /^1[2-9]\d{2}[2-9]\d{6}$/.test(digitsOnly);
+    }
+    
+    // General international format (7-15 digits)
+    if (digitsOnly.length >= 7 && digitsOnly.length <= 15) {
+      // Must start with a valid country code (not 0 or 1 unless it's US/Israel)
+      return /^[2-9]\d{6,14}$/.test(digitsOnly);
+    }
+    
+    return false;
   };
 
   // Message sending functions
@@ -771,25 +818,27 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 
                 // Check Mobile Phone column
                 if (mobilePhoneIndex !== -1 && values[mobilePhoneIndex]) {
-                  const phone = values[mobilePhoneIndex];
-                  const isValid = isValidPhoneNumber(phone);
-                  console.log('Mobile Phone:', phone, 'Valid:', isValid);
+                  const originalPhone = values[mobilePhoneIndex];
+                  const normalizedPhone = normalizePhoneNumber(originalPhone);
+                  const isValid = isValidPhoneNumber(normalizedPhone);
+                  console.log('Mobile Phone:', originalPhone, 'Normalized:', normalizedPhone, 'Valid:', isValid);
                   if (isValid) {
-                    allPhoneNumbers.push(phone);
+                    allPhoneNumbers.push(normalizedPhone);
                   } else {
-                    invalidNumbers.push(phone);
+                    invalidNumbers.push(originalPhone);
                   }
                 }
                 
                 // Check Business Phone column
                 if (businessPhoneIndex !== -1 && values[businessPhoneIndex]) {
-                  const phone = values[businessPhoneIndex];
-                  const isValid = isValidPhoneNumber(phone);
-                  console.log('Business Phone:', phone, 'Valid:', isValid);
+                  const originalPhone = values[businessPhoneIndex];
+                  const normalizedPhone = normalizePhoneNumber(originalPhone);
+                  const isValid = isValidPhoneNumber(normalizedPhone);
+                  console.log('Business Phone:', originalPhone, 'Normalized:', normalizedPhone, 'Valid:', isValid);
                   if (isValid) {
-                    allPhoneNumbers.push(phone);
+                    allPhoneNumbers.push(normalizedPhone);
                   } else {
-                    invalidNumbers.push(phone);
+                    invalidNumbers.push(originalPhone);
                   }
                 }
               }
@@ -2604,9 +2653,12 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                               borderRadius: 2, 
                               backgroundColor: '#f8f9fa' 
                             }}>
-                              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#1976d2' }}>
-                                {t.csvPhoneNumbers.phoneNumbersFromFile}
-                              </Typography>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#1976d2' }}>
+                  {t.csvPhoneNumbers.phoneNumbersFromFile}
+                </Typography>
+                <Typography variant="caption" sx={{ mb: 1, display: 'block', color: '#666', fontStyle: 'italic' }}>
+                  {language === 'he' ? 'מספרים ללא קידומת נוספה להם קידומת ישראלית (972) אוטומטית' : 'Numbers without prefix automatically got Israeli prefix (972) added'}
+                </Typography>
                               <Box sx={{ 
                                 display: 'flex', 
                                 flexWrap: 'wrap', 
