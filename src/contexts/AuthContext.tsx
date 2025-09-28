@@ -63,24 +63,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     handleRedirect();
 
     const unsubscribe = onAuthStateChange(async (user) => {
-      console.log('🔄 AuthContext - onAuthStateChange triggered with user:', user);
       setUser(user);
       
       if (user) {
-        console.log('👤 AuthContext - User exists, fetching data from Firestore for UID:', user.uid);
         // Fetch additional user data from Firestore
         const result = await getUserData(user.uid);
-        console.log('🔍 AuthContext - getUserData result:', result);
         
         if (result.success && result.data) {
           // Check if we have the essential user data fields
           const hasEssentialData = result.data.name && (result.data.email || result.data.phoneNumber);
           
           if (hasEssentialData) {
-            console.log('✅ AuthContext - Setting userData from Firestore:', result.data);
             setUserData(result.data as UserData);
           } else {
-            console.warn('⚠️ AuthContext - Firestore data incomplete, merging with Auth data:', result.data);
             // Merge Firestore data with Firebase Auth data
             const mergedUserData = {
               name: result.data.name || user.displayName || user.email?.split('@')[0] || 'Unknown User',
@@ -93,11 +88,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               isOnline: result.data.isOnline || true,
               lastActivity: result.data.lastActivity || new Date()
             };
-            console.log('🔄 AuthContext - Using merged userData:', mergedUserData);
             setUserData(mergedUserData);
           }
         } else {
-          console.error('❌ AuthContext - Firestore data not found, creating from Auth user');
           // Fallback: create userData from Firebase Auth user
           const fallbackUserData = {
             name: user.displayName || user.email?.split('@')[0] || 'Unknown User',
@@ -108,14 +101,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             lastLogin: new Date().toISOString(),
             provider: user.providerData[0]?.providerId || 'unknown'
           };
-          console.log('🔄 AuthContext - Using fallback userData:', fallbackUserData);
           setUserData(fallbackUserData);
         }
       } else {
         setUserData(null);
       }
       
-      console.log('🏁 AuthContext - Setting loading to false, user:', user ? 'exists' : 'null');
       setLoading(false);
     });
 
