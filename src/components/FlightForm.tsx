@@ -957,6 +957,10 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       const combinedMessage = `${generatedText}\n\n${generatedEnglishText}`;
       const smsServerUrl = process.env.REACT_APP_SMS_SERVER_URL || 'http://localhost:3001';
       
+      // Debug log
+      console.log('🔍 SMS Server URL:', process.env.REACT_APP_SMS_SERVER_URL);
+      console.log('🔍 Final SMS Server URL:', smsServerUrl);
+      
       // Check if SMS server is available
       if (!process.env.REACT_APP_SMS_SERVER_URL || process.env.REACT_APP_SMS_SERVER_URL.includes('your-sms-server-name')) {
         setError(language === 'he' 
