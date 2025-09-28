@@ -2550,89 +2550,99 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                         </Typography>
                       )}
                       
-                      {/* Display extracted phone numbers */}
-                      {csvPhoneNumbers.length > 0 && (
+                      {/* Display phone numbers side by side */}
+                      {(csvPhoneNumbers.length > 0 || csvInvalidNumbers.length > 0) && (
                         <Box sx={{ 
                           mt: 2, 
-                          p: 2, 
-                          border: '1px solid #e0e0e0', 
-                          borderRadius: 2, 
-                          backgroundColor: '#f8f9fa' 
+                          display: 'flex', 
+                          gap: 2, 
+                          flexDirection: { xs: 'column', md: 'row' } 
                         }}>
-                          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#1976d2' }}>
-                            {t.csvPhoneNumbers.phoneNumbersFromFile}
-                          </Typography>
-                          <Box sx={{ 
-                            display: 'flex', 
-                            flexWrap: 'wrap', 
-                            gap: 1, 
-                            maxHeight: '120px', 
-                            overflowY: 'auto' 
-                          }}>
-                            {csvPhoneNumbers.map((phone, index) => (
-                              <Box
-                                key={index}
-                                sx={{
-                                  px: 1.5,
-                                  py: 0.5,
-                                  backgroundColor: '#e3f2fd',
-                                  border: '1px solid #90caf9',
-                                  borderRadius: 1,
-                                  fontSize: '0.875rem',
-                                  fontWeight: 'medium',
-                                  color: '#1565c0'
-                                }}
-                              >
-                                {phone}
+                          {/* Valid phone numbers */}
+                          {csvPhoneNumbers.length > 0 && (
+                            <Box sx={{ 
+                              flex: 1,
+                              p: 2, 
+                              border: '1px solid #e0e0e0', 
+                              borderRadius: 2, 
+                              backgroundColor: '#f8f9fa' 
+                            }}>
+                              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#1976d2' }}>
+                                {t.csvPhoneNumbers.phoneNumbersFromFile}
+                              </Typography>
+                              <Box sx={{ 
+                                display: 'flex', 
+                                flexWrap: 'wrap', 
+                                gap: 1, 
+                                maxHeight: '120px', 
+                                overflowY: 'auto' 
+                              }}>
+                                {csvPhoneNumbers.map((phone, index) => (
+                                  <Box
+                                    key={index}
+                                    sx={{
+                                      px: 1.5,
+                                      py: 0.5,
+                                      backgroundColor: '#e3f2fd',
+                                      border: '1px solid #90caf9',
+                                      borderRadius: 1,
+                                      fontSize: '0.875rem',
+                                      fontWeight: 'medium',
+                                      color: '#1565c0'
+                                    }}
+                                  >
+                                    {phone}
+                                  </Box>
+                                ))}
                               </Box>
-                            ))}
-                          </Box>
-                          <Typography variant="caption" sx={{ mt: 1, display: 'block', color: '#666' }}>
-                            {t.csvPhoneNumbers.totalPhoneNumbers}: {csvPhoneNumbers.length}
-                          </Typography>
-                        </Box>
-                      )}
-                      
-                      {/* Display invalid phone numbers */}
-                      {csvInvalidNumbers.length > 0 && (
-                        <Box sx={{ 
-                          mt: 2, 
-                          p: 2, 
-                          border: '1px solid #ffcdd2', 
-                          borderRadius: 2, 
-                          backgroundColor: '#ffebee' 
-                        }}>
-                          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#d32f2f' }}>
-                            {t.csvPhoneNumbers.invalidPhoneNumbers}:
-                          </Typography>
-                          <Box sx={{ 
-                            display: 'flex', 
-                            flexWrap: 'wrap', 
-                            gap: 1, 
-                            maxHeight: '120px', 
-                            overflowY: 'auto' 
-                          }}>
-                            {csvInvalidNumbers.map((phone, index) => (
-                              <Box
-                                key={index}
-                                sx={{
-                                  px: 1.5,
-                                  py: 0.5,
-                                  backgroundColor: '#ffcdd2',
-                                  border: '1px solid #f44336',
-                                  borderRadius: 1,
-                                  fontSize: '0.875rem',
-                                  fontWeight: 'medium',
-                                  color: '#d32f2f'
-                                }}
-                              >
-                                {phone}
+                              <Typography variant="caption" sx={{ mt: 1, display: 'block', color: '#666' }}>
+                                {t.csvPhoneNumbers.totalPhoneNumbers}: {csvPhoneNumbers.length}
+                              </Typography>
+                            </Box>
+                          )}
+                          
+                          {/* Invalid phone numbers */}
+                          {csvInvalidNumbers.length > 0 && (
+                            <Box sx={{ 
+                              flex: 1,
+                              p: 2, 
+                              border: '1px solid #ffcdd2', 
+                              borderRadius: 2, 
+                              backgroundColor: '#ffebee' 
+                            }}>
+                              <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#d32f2f' }}>
+                                {t.csvPhoneNumbers.invalidPhoneNumbers}:
+                              </Typography>
+                              <Box sx={{ 
+                                display: 'flex', 
+                                flexWrap: 'wrap', 
+                                gap: 1, 
+                                maxHeight: '120px', 
+                                overflowY: 'auto' 
+                              }}>
+                                {csvInvalidNumbers.map((phone, index) => (
+                                  <Box
+                                    key={index}
+                                    sx={{
+                                      px: 1.5,
+                                      py: 0.5,
+                                      backgroundColor: '#ffcdd2',
+                                      border: '1px solid #f44336',
+                                      borderRadius: 1,
+                                      fontSize: '0.875rem',
+                                      fontWeight: 'medium',
+                                      color: '#d32f2f'
+                                    }}
+                                  >
+                                    {phone}
+                                  </Box>
+                                ))}
                               </Box>
-                            ))}
-                          </Box>
-                          <Typography variant="caption" sx={{ mt: 1, display: 'block', color: '#d32f2f' }}>
-                            {t.csvPhoneNumbers.totalInvalidNumbers}: {csvInvalidNumbers.length}
-                          </Typography>
+                              <Typography variant="caption" sx={{ mt: 1, display: 'block', color: '#d32f2f' }}>
+                                {t.csvPhoneNumbers.totalInvalidNumbers}: {csvInvalidNumbers.length}
+                              </Typography>
+                            </Box>
+                          )}
                         </Box>
                       )}
                       
