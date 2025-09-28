@@ -958,10 +958,10 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       const smsServerUrl = process.env.REACT_APP_SMS_SERVER_URL || 'http://localhost:3001';
       
       // Check if SMS server is available
-      if (!process.env.REACT_APP_SMS_SERVER_URL && process.env.NODE_ENV === 'production') {
+      if (!process.env.REACT_APP_SMS_SERVER_URL || process.env.REACT_APP_SMS_SERVER_URL.includes('your-sms-server-name')) {
         setError(language === 'he' 
-          ? 'שרת SMS לא מוגדר. אנא הגדר את REACT_APP_SMS_SERVER_URL ב-Render.'
-          : 'SMS server not configured. Please set REACT_APP_SMS_SERVER_URL in Render.'
+          ? 'שרת SMS לא מוגדר. אנא הגדר את REACT_APP_SMS_SERVER_URL ב-Render עם ה-URL הנכון של שרת SMS.'
+          : 'SMS server not configured. Please set REACT_APP_SMS_SERVER_URL in Render with the correct SMS server URL.'
         );
         return;
       }
