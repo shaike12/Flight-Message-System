@@ -130,7 +130,7 @@ export const addMissingRoleField = async (uid: string, role: string = 'user') =>
 // Google Authentication functions
 export const signInWithGoogle = async () => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
+    const result = await signInWithRedirect(auth, googleProvider);
     const user = result.user;
     
     // Check if user exists in Firestore
