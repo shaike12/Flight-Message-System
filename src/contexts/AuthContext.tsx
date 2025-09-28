@@ -115,6 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUserData(null);
       }
       
+      console.log('🏁 AuthContext - Setting loading to false, user:', user ? 'exists' : 'null');
       setLoading(false);
     });
 
