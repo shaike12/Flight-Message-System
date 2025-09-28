@@ -272,7 +272,7 @@ const Login: React.FC = () => {
         // The user will be redirected to Google and then back to our app
         setMessage({ 
           type: 'success', 
-          text: language === 'he' ? 'מעביר אותך ל-Google להתחברות...' : 'Redirecting to Google for sign-in...'
+          text: language === 'he' ? 'התחברת עם Google בהצלחה!' : 'Successfully signed in with Google!'
         });
       } else {
         setMessage({ 

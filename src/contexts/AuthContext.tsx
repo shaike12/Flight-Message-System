@@ -63,9 +63,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     handleRedirect();
 
     const unsubscribe = onAuthStateChange(async (user) => {
+      console.log('🔄 AuthContext - onAuthStateChange triggered with user:', user);
       setUser(user);
       
       if (user) {
+        console.log('👤 AuthContext - User exists, fetching data from Firestore for UID:', user.uid);
         // Fetch additional user data from Firestore
         const result = await getUserData(user.uid);
         console.log('🔍 AuthContext - getUserData result:', result);
