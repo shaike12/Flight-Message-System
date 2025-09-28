@@ -808,6 +808,10 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
               header.toLowerCase().includes('business')
             );
             
+            console.log('Headers found:', headers);
+            console.log('Mobile Phone Index:', mobilePhoneIndex);
+            console.log('Business Phone Index:', businessPhoneIndex);
+            
             if (mobilePhoneIndex !== -1 || businessPhoneIndex !== -1) {
               // Extract phone numbers from both columns
               const allPhoneNumbers: string[] = [];
@@ -815,6 +819,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
               
               for (let i = 1; i < lines.length; i++) {
                 const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                console.log(`Row ${i}:`, values);
                 
                 // Check Mobile Phone column
                 if (mobilePhoneIndex !== -1 && values[mobilePhoneIndex]) {
