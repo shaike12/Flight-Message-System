@@ -741,6 +741,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 // Check Mobile Phone column
                 if (mobilePhoneIndex !== -1 && values[mobilePhoneIndex]) {
                   const phone = values[mobilePhoneIndex];
+                  console.log('Mobile Phone:', phone, 'Valid:', isValidPhoneNumber(phone));
                   if (isValidPhoneNumber(phone)) {
                     allPhoneNumbers.push(phone);
                   } else {
@@ -751,6 +752,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 // Check Business Phone column
                 if (businessPhoneIndex !== -1 && values[businessPhoneIndex]) {
                   const phone = values[businessPhoneIndex];
+                  console.log('Business Phone:', phone, 'Valid:', isValidPhoneNumber(phone));
                   if (isValidPhoneNumber(phone)) {
                     allPhoneNumbers.push(phone);
                   } else {
@@ -759,6 +761,8 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 }
               }
               
+              console.log('Valid numbers:', allPhoneNumbers);
+              console.log('Invalid numbers:', invalidNumbers);
               setCsvPhoneNumbers(allPhoneNumbers);
               setCsvInvalidNumbers(invalidNumbers);
             } else {
