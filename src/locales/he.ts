@@ -398,5 +398,11 @@ export const he = {
         emailPasswordLinkedSuccess: 'אימייל וסיסמה קושרו בהצלחה',
         newPassword: 'סיסמה חדשה',
         confirmPassword: 'אשר סיסמה'
+  },
+  
+  // CSV Phone Numbers
+  csvPhoneNumbers: {
+    phoneNumbersFromFile: 'מספרי טלפון שנלקחו מהקובץ:',
+    totalPhoneNumbers: 'סה"כ מספרי טלפון'
   }
 };

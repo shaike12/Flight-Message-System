@@ -398,5 +398,11 @@ export const en = {
         emailPasswordLinkedSuccess: 'Email and password linked successfully',
         newPassword: 'New Password',
         confirmPassword: 'Confirm Password'
+  },
+  
+  // CSV Phone Numbers
+  csvPhoneNumbers: {
+    phoneNumbersFromFile: 'Phone numbers extracted from file:',
+    totalPhoneNumbers: 'Total phone numbers'
   }
 };
