@@ -696,8 +696,39 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   const isValidPhoneNumber = (phone: string): boolean => {
     // Remove all non-digit characters
     const cleanPhone = phone.replace(/\D/g, '');
-    // Check if it's a valid length (7-15 digits)
-    return cleanPhone.length >= 7 && cleanPhone.length <= 15;
+    
+    // Check if it's empty or too short
+    if (cleanPhone.length < 7 || cleanPhone.length > 15) {
+      return false;
+    }
+    
+    // Check for obviously invalid patterns
+    // All same digits (like 1111111111)
+    if (/^(\d)\1+$/.test(cleanPhone)) {
+      return false;
+    }
+    
+    // Contains letters or special characters that shouldn't be in phone numbers
+    if (/[a-zA-Z]/.test(phone) && !phone.includes('-') && !phone.includes('+') && !phone.includes('(') && !phone.includes(')')) {
+      return false;
+    }
+    
+    // Check for common invalid patterns
+    const invalidPatterns = [
+      /^0+$/, // All zeros
+      /^1+$/, // All ones
+      /^123/, // Starting with 123
+      /^000/, // Starting with 000
+      /^111/, // Starting with 111
+    ];
+    
+    for (const pattern of invalidPatterns) {
+      if (pattern.test(cleanPhone)) {
+        return false;
+      }
+    }
+    
+    return true;
   };
 
   // Message sending functions
@@ -741,8 +772,9 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 // Check Mobile Phone column
                 if (mobilePhoneIndex !== -1 && values[mobilePhoneIndex]) {
                   const phone = values[mobilePhoneIndex];
-                  console.log('Mobile Phone:', phone, 'Valid:', isValidPhoneNumber(phone));
-                  if (isValidPhoneNumber(phone)) {
+                  const isValid = isValidPhoneNumber(phone);
+                  console.log('Mobile Phone:', phone, 'Valid:', isValid);
+                  if (isValid) {
                     allPhoneNumbers.push(phone);
                   } else {
                     invalidNumbers.push(phone);
@@ -752,8 +784,9 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                 // Check Business Phone column
                 if (businessPhoneIndex !== -1 && values[businessPhoneIndex]) {
                   const phone = values[businessPhoneIndex];
-                  console.log('Business Phone:', phone, 'Valid:', isValidPhoneNumber(phone));
-                  if (isValidPhoneNumber(phone)) {
+                  const isValid = isValidPhoneNumber(phone);
+                  console.log('Business Phone:', phone, 'Valid:', isValid);
+                  if (isValid) {
                     allPhoneNumbers.push(phone);
                   } else {
                     invalidNumbers.push(phone);
