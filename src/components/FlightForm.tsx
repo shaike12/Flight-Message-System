@@ -139,6 +139,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   const [previewMessage, setPreviewMessage] = useState<{hebrew: string; english: string; french?: string} | null>(null);
   const [csvRecordCount, setCsvRecordCount] = useState<number | null>(null);
   const [csvPhoneNumbers, setCsvPhoneNumbers] = useState<string[]>([]);
+  const [csvInvalidNumbers, setCsvInvalidNumbers] = useState<string[]>([]);
   const [showIndividualFields, setShowIndividualFields] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
@@ -691,6 +692,14 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
   };
 
 
+  // Phone number validation function
+  const isValidPhoneNumber = (phone: string): boolean => {
+    // Remove all non-digit characters
+    const cleanPhone = phone.replace(/\D/g, '');
+    // Check if it's a valid length (7-15 digits)
+    return cleanPhone.length >= 7 && cleanPhone.length <= 15;
+  };
+
   // Message sending functions
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -707,26 +716,53 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
           const lines = text.split('\n').filter(line => line.trim());
           
           if (lines.length > 0) {
-            // Find the header row and locate "Mobile Phone" column
+            // Find the header row and locate phone columns
             const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            
+            // Look for Mobile Phone column first, then Business Phone
             const mobilePhoneIndex = headers.findIndex(header => 
               header.toLowerCase().includes('mobile phone') || 
-              header.toLowerCase().includes('mobile') ||
-              header.toLowerCase().includes('phone')
+              header.toLowerCase().includes('mobile')
             );
             
-            if (mobilePhoneIndex !== -1) {
-              // Extract phone numbers from the CSV
-              const phoneNumbers: string[] = [];
+            const businessPhoneIndex = headers.findIndex(header => 
+              header.toLowerCase().includes('business phone') || 
+              header.toLowerCase().includes('business')
+            );
+            
+            if (mobilePhoneIndex !== -1 || businessPhoneIndex !== -1) {
+              // Extract phone numbers from both columns
+              const allPhoneNumbers: string[] = [];
+              const invalidNumbers: string[] = [];
+              
               for (let i = 1; i < lines.length; i++) {
                 const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-                if (values[mobilePhoneIndex]) {
-                  phoneNumbers.push(values[mobilePhoneIndex]);
+                
+                // Check Mobile Phone column
+                if (mobilePhoneIndex !== -1 && values[mobilePhoneIndex]) {
+                  const phone = values[mobilePhoneIndex];
+                  if (isValidPhoneNumber(phone)) {
+                    allPhoneNumbers.push(phone);
+                  } else {
+                    invalidNumbers.push(phone);
+                  }
+                }
+                
+                // Check Business Phone column
+                if (businessPhoneIndex !== -1 && values[businessPhoneIndex]) {
+                  const phone = values[businessPhoneIndex];
+                  if (isValidPhoneNumber(phone)) {
+                    allPhoneNumbers.push(phone);
+                  } else {
+                    invalidNumbers.push(phone);
+                  }
                 }
               }
-              setCsvPhoneNumbers(phoneNumbers);
+              
+              setCsvPhoneNumbers(allPhoneNumbers);
+              setCsvInvalidNumbers(invalidNumbers);
             } else {
-              setError('לא נמצא עמודת "Mobile Phone" בקובץ');
+              setError('לא נמצא עמודת "Mobile Phone" או "Business Phone" בקובץ');
               setSelectedFile(null);
               return;
             }
@@ -2557,6 +2593,49 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                         </Box>
                       )}
                       
+                      {/* Display invalid phone numbers */}
+                      {csvInvalidNumbers.length > 0 && (
+                        <Box sx={{ 
+                          mt: 2, 
+                          p: 2, 
+                          border: '1px solid #ffcdd2', 
+                          borderRadius: 2, 
+                          backgroundColor: '#ffebee' 
+                        }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold', color: '#d32f2f' }}>
+                            {t.csvPhoneNumbers.invalidPhoneNumbers}:
+                          </Typography>
+                          <Box sx={{ 
+                            display: 'flex', 
+                            flexWrap: 'wrap', 
+                            gap: 1, 
+                            maxHeight: '120px', 
+                            overflowY: 'auto' 
+                          }}>
+                            {csvInvalidNumbers.map((phone, index) => (
+                              <Box
+                                key={index}
+                                sx={{
+                                  px: 1.5,
+                                  py: 0.5,
+                                  backgroundColor: '#ffcdd2',
+                                  border: '1px solid #f44336',
+                                  borderRadius: 1,
+                                  fontSize: '0.875rem',
+                                  fontWeight: 'medium',
+                                  color: '#d32f2f'
+                                }}
+                              >
+                                {phone}
+                              </Box>
+                            ))}
+                          </Box>
+                          <Typography variant="caption" sx={{ mt: 1, display: 'block', color: '#d32f2f' }}>
+                            {t.csvPhoneNumbers.totalInvalidNumbers}: {csvInvalidNumbers.length}
+                          </Typography>
+                        </Box>
+                      )}
+                      
                       <Button
                         size="small"
                         variant="outlined"
@@ -2565,6 +2644,7 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
                           setSelectedFile(null);
                           setCsvRecordCount(null);
                           setCsvPhoneNumbers([]);
+                          setCsvInvalidNumbers([]);
                           setShowIndividualFields(true); // Show individual fields when CSV is removed
                           // Reset the file input
                           if (fileInputRef.current) {

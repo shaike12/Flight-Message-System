@@ -403,6 +403,8 @@ export const he = {
   // CSV Phone Numbers
   csvPhoneNumbers: {
     phoneNumbersFromFile: 'מספרי טלפון שנלקחו מהקובץ:',
-    totalPhoneNumbers: 'סה"כ מספרי טלפון'
+    totalPhoneNumbers: 'סה"כ מספרי טלפון',
+    invalidPhoneNumbers: 'מספרי טלפון לא תקינים שנמצאו',
+    totalInvalidNumbers: 'סה"כ מספרים לא תקינים'
   }
 };
