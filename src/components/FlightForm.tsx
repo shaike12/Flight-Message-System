@@ -957,6 +957,15 @@ const FlightForm: React.FC<FlightFormProps> = ({ cities, flightRoutes, templates
       const combinedMessage = `${generatedText}\n\n${generatedEnglishText}`;
       const smsServerUrl = process.env.REACT_APP_SMS_SERVER_URL || 'http://localhost:3001';
       
+      // Check if SMS server is available
+      if (!process.env.REACT_APP_SMS_SERVER_URL && process.env.NODE_ENV === 'production') {
+        setError(language === 'he' 
+          ? 'שרת SMS לא מוגדר. אנא הגדר את REACT_APP_SMS_SERVER_URL ב-Render.'
+          : 'SMS server not configured. Please set REACT_APP_SMS_SERVER_URL in Render.'
+        );
+        return;
+      }
+      
       let response;
       let data;
       let sendingStats: any = null;

@@ -14,6 +14,11 @@ services:
         value: true
       - key: REACT_APP_ENABLE_CRASH_REPORTING
         value: true
+      # SMS Server URL - IMPORTANT: Replace with your actual SMS server URL from Render
+      # First, deploy the sms-server service to Render, then update this URL
+      # Example: https://sms-server-abc123.onrender.com
+      - key: REACT_APP_SMS_SERVER_URL
+        value: https://your-sms-server-name.onrender.com
     # Add your Firebase environment variables here
     # - key: REACT_APP_FIREBASE_API_KEY
     #   value: your_firebase_api_key
