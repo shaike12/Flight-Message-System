@@ -130,39 +130,9 @@ export const addMissingRoleField = async (uid: string, role: string = 'user') =>
 // Google Authentication functions
 export const signInWithGoogle = async () => {
   try {
-    const result = await signInWithRedirect(auth, googleProvider);
-    const user = result.user;
-    
-    // Check if user exists in Firestore
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    
-    if (!userDoc.exists()) {
-      // Create new user document for Google sign-in
-      await setDoc(doc(db, 'users', user.uid), {
-        email: user.email,
-        name: user.displayName || user.email?.split('@')[0] || 'משתמש',
-        role: 'user', // Default role for Google users
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-        loginCount: 1,
-        isOnline: true,
-        provider: 'google'
-      });
-    } else {
-      // Update last login time for existing user while preserving existing data
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      const currentLoginCount = userDoc.exists() ? (userDoc.data()?.loginCount || 0) : 0;
-      const existingData = userDoc.exists() ? userDoc.data() : {};
-      
-      await setDoc(doc(db, 'users', user.uid), {
-        ...existingData, // Preserve all existing data including role
-        lastLogin: new Date().toISOString(),
-        isOnline: true,
-        loginCount: currentLoginCount + 1
-      }, { merge: true });
-    }
-    
-    return { success: true, user };
+    // Use redirect instead of popup to avoid CORS issues
+    await signInWithRedirect(auth, googleProvider);
+    return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
